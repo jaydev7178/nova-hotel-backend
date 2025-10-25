@@ -1,0 +1,43 @@
+spring:
+
+  datasource:
+    # Prefer explicit SPRING_DATASOURCE_URL, otherwise build from DB_* env vars with sensible defaults
+    url: "${SPRING_DATASOURCE_URL:jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:nova_hotel_db}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}"
+    # some consumers expect jdbc-url property; set both to be safe
+    jdbc-url: "${SPRING_DATASOURCE_URL:jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:nova_hotel_db}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}"
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:admin@123}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+
+  jpa:
+    hibernate:
+      # use update in dev to preserve data while allowing schema evolution
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        # Use the recommended dialect class
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+
+# Development specific settings
+logging:
+  level:
+    com.novahotel: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+# Server configuration
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /api
+
+# CORS for development
+app:
+  cors:
+    allowed-origins: http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000
+
