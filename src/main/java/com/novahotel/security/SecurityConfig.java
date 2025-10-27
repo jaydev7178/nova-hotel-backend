@@ -38,7 +38,7 @@ public class SecurityConfig {
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
             .authorizeHttpRequests(authz -> authz
                 // Test endpoints
-                .requestMatchers("/api/test/**").permitAll()
+                .requestMatchers("/test/**").permitAll()  // Removed /api
                 
                 // Swagger UI endpoints
                 .requestMatchers(
@@ -56,32 +56,32 @@ public class SecurityConfig {
                     "/actuator/health"
                 ).permitAll()
                 
-                // Auth endpoints
+                // Auth endpoints - SPECIFIC RULES FIRST!
                 .requestMatchers(
-                    "/api/auth/register",
-                    "/api/auth/login"
+                    "/auth/register",     // Removed /api
+                    "/auth/login"         // Removed /api
                 ).permitAll()
+                
+                // Protected auth endpoints
+                .requestMatchers("/auth/**").authenticated()  // Removed /api
                 
                 // Public content endpoints
                 .requestMatchers(
-                    "/api/products/**",
-                    "/api/categories/**"
+                    "/products/**",       // Removed /api
+                    "/categories/**"      // Removed /api
                 ).permitAll()
-                
-                // Protected auth endpoints (except register and login)
-                .requestMatchers("/api/auth/**").authenticated()
                 
                 // User endpoints
                 .requestMatchers(
-                    "/api/users/**",
-                    "/api/cart/**",
-                    "/api/orders/**"
+                    "/users/**",          // Removed /api
+                    "/cart/**",           // Removed /api
+                    "/orders/**"          // Removed /api
                 ).hasAnyRole("USER", "OWNER", "ADMIN")
                 
                 // Admin endpoints
                 .requestMatchers(
-                    "/api/admin/**",
-                    "/api/owner/**"
+                    "/admin/**",          // Removed /api
+                    "/owner/**"           // Removed /api
                 ).hasAnyRole("OWNER", "ADMIN")
                 
                 // Everything else needs authentication
@@ -90,7 +90,6 @@ public class SecurityConfig {
             
         return http.build();
     }
-    
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
