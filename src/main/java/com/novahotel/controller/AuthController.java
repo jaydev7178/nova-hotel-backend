@@ -48,6 +48,8 @@ public class AuthController {
             user.setPassword(request.getPassword());
             user.setFullName(request.getFullName());
             user.setPhoneNumber(request.getPhoneNumber());
+            user.setFirstName(request.getFirstName());
+            user.setLastName(request.getLastName());
             user.setAddress(request.getAddress());
             
             User savedUser = userService.registerUser(user);

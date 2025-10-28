@@ -1,0 +1,258 @@
+Good — I reviewed the frontend README you linked and the backend code in your workspace. Below is a concise, actionable integration plan that maps frontend pages to backend APIs, shows exact endpoints and request/response shapes, and gives a practical timeline and workflow you can follow to finish integration reliably.
+
+If you want, I can immediately generate Postman collection / OpenAPI client examples or make a small sample Angular service + interceptor for one endpoint to demonstrate.
+
+Summary (one-liner)
+
+Frontend: Angular 17 app (standalone components, RxJS services, lazy routes).
+Backend: Spring Boot 3 (Java 21), JWT auth, JPA/MySQL, controllers already present.
+Goal: Integrate frontend services to call backend APIs securely (JWT + CORS), test and iterate feature-by-feature.
+Frontend analysis (what I found)
+Tech: Angular 17+, Bootstrap 5, FontAwesome, RxJS, Angular Router, Reactive Forms.
+Structure (src/app):
+components/shared/header & footer
+home, product-catalog, product-detail
+shopping-cart, checkout, order-confirmation
+admin area: dashboard, product-management, order-management, approval-management
+services: product.service.ts, cart.service.ts, order.service.ts (mocked)
+models: product.model.ts etc.
+Current environment: default apiUrl in README shows apiUrl: 'http://localhost:3000/api' (must change to backend URL).
+Mocking: app currently uses mock services for demo, so switching to real API requires updating service URL constants and possibly response shapes.
+Key pages to wire: product listing/search, product details (images), cart, checkout (multi-step), order confirmation, user account (profile/orders), admin CRUD flows (products, categories, orders).
+Important concerns already noted in README: CORS, authentication flow, error handling, image handling, pagination.
+Backend API surface (extracted from project controllers)
+I scanned controllers in your backend. Below are main endpoints, HTTP methods, and short request/response guidance.
+Auth
+
+POST /auth/register
+Req: RegisterRequest { username, email, password, fullName, phoneNumber, address }
+Resp 201: { success:true, message, data: { token, user, message } }
+POST /auth/login
+Req: LoginRequest { usernameOrEmail, password }
+Resp 200: { success:true, message, data: { token, user, message } }
+GET /auth/me
+Requires Authorization: Bearer <token>
+Resp 200: { success:true, message, data: user }
+Products
+
+GET /api/products
+Query: page, size, sortBy, sortDir
+Resp: Page<Product>
+GET /api/products/{id}
+Resp: Product
+GET /api/products/category/{categoryId}
+Resp: Page<Product>
+GET /api/products/search?name={name}&page=..&size=..
+Resp: Page<Product>
+GET /api/products/search/category/{categoryId}?name=...
+GET /api/products/in-stock
+GET /api/products/low-stock?threshold=10
+GET /api/products/price-range?minPrice=..&maxPrice=..&page=..&size=..
+POST /api/products/upload-image
+Multipart file -> Resp: { success, message, data: imageUrl }
+Categories
+
+GET /api/categories
+GET /api/categories/{id}
+GET /api/categories/search?name=...
+Orders
+
+POST /api/orders/checkout
+Req: CheckoutRequest { cartItems: [{productId, qty, price}], shippingAddress, notes }
+Authorization required
+Resp 201: { success:true, message, data: order }
+GET /api/orders
+Auth: returns user orders pageable
+GET /api/orders/{id} (auth + ownership/admin checks)
+GET /api/orders/order-number/{orderNumber}
+GET /api/orders/status/{status} (admin/owner)
+PUT /api/orders/{id}/accept-terms (user)
+PUT /api/orders/{id}/send-payment-info (admin)
+PUT /api/orders/{id}/confirm-payment (admin)
+PUT /api/orders/{id}/initiate-delivery (admin)
+PUT /api/orders/{id}/mark-delivered (admin)
+Users
+
+GET /api/users/profile (auth)
+PUT /api/users/update-profile (auth)
+Admin (protected endpoints)
+
+GET /api/admin/users
+PUT /api/admin/users/{id}/deactivate
+PUT /api/admin/users/{id}/activate
+Category CRUD under /api/admin/categories
+Product CRUD under /api/admin/products
+/api/admin/orders endpoints (status, stats) — some are TODOs in code
+Other / utilities
+
+Resource endpoints for uploads (/uploads/**) and Swagger (/v3/api-docs, /swagger-ui)
+Test endpoints: /api/test/* (useful for smoke tests)
+API shapes — example JSON bodies and tokens
+Login request
+{
+"usernameOrEmail": "user1",
+"password": "secret"
+}
+Login response data.data (LoginResponse):
+{
+"token": "jwt.token.here",
+"user": { "id": 1, "username": "...", "email": "...", "role": "USER", ... },
+"message": "Login successful"
+}
+Checkout request (example)
+{
+"cartItems": [
+{ "productId": 123, "quantity": 2, "price": 20.5 }
+],
+"shippingAddress": "123 Street, City, Country",
+"notes": "Please deliver between 9-5"
+}
+Backend recommendations / small gaps I saw
+CORS: already configured; ensure frontend origins (http://localhost:4200 or deployed domain) are in CORS allowlist.
+Pagination: frontend must parse Spring Data Page<T> (content, totalElements, totalPages, number).
+Error format: controllers often return ApiResponse wrapper; align frontend error parsing accordingly.
+Uploads: endpoints return image URL strings — frontend should display images via that URL.
+Security: JWT auth used — frontend needs an interceptor that sets Authorization header for protected calls.
+Missing endpoints: cart endpoints are not present (cart may be client-side). Clarify whether cart is server persisted; if required, implement /api/cart endpoints (add/remove/list).
+Admin endpoints: some admin order implementations return Page.empty() (needs to be implemented if admin features required).
+API integration timeline & level-of-effort estimate
+(Assuming 1 developer working full-time, experienced in Angular + Spring Boot)
+Phase estimate summary (full integration, dev/test + small polish): 2.5 – 4 weeks.
+
+Week 0 (prep) — 1 day
+Align env; run both apps locally (backend: port 8080, frontend: 4200).
+Update frontend env.apiUrl to backend (e.g., http://localhost:8080/api).
+Week 1 — 4–6 days: Core public flows
+Products listing, search, categories, product details, images. (2–3 days)
+Cart client-side & persist in localStorage (1 day)
+Checkout POST -> /api/orders/checkout (1 day)
+Smoke test & error handling (1 day)
+Week 2 — 4–5 days: Auth & user flows
+Login/register integration, JWT storage, Authorization header interceptor (1–2 days)
+User profile (GET/PUT) and orders listing (1–2 days)
+Improve UX for auth errors; unit test key services (1 day)
+Week 3 — 4–6 days: Admin flows + file uploads
+Admin product CRUD, image upload integration, categories CRUD (2–3 days)
+Admin order status flows (approve/send payment/mark delivered) (1–2 days)
+Complete missing backend admin features if required (2–4 days, backend dev)
+Week 4 — 3–5 days: QA, polish, deploy
+E2E tests (Cypress) basic flows (2 days)
+Performance & caching, deployment adjustments (1–2 days)
+Final bug fixes and documentation (1 day)
+Total: ~2.5 – 4 weeks depending on missing backend features and QA scope.
+
+Milestone breakdown, deliverables and checks
+Milestone 0 — Setup & contract (1 day)
+Deliverables:
+Backend running locally (port 8080)
+Frontend running (ng serve)
+Updated src/environments/environment.ts with apiUrl: "http://localhost:8080/api"
+API contract summary doc (endpoints + sample payloads)
+Acceptance: Frontend app can load product list using /api/products (mock -> real switchable)
+Milestone 1 — Public product flows & cart (Week 1)
+
+Deliverables:
+Product listing page integrated and paginated
+Category filter & search working
+Product detail page integrated with images
+Cart UI hooked to product add/remove, persisted in localStorage
+Checkout UI collects customer info and calls /api/orders/checkout
+Acceptance: Can place a test order (call returns 201)
+Milestone 2 — Authentication & user area (Week 2)
+
+Deliverables:
+Register & Login forms wired; token stored in localStorage
+HTTP interceptor adds Authorization header to protected requests
+Profile page (GET /api/users/profile, PUT /api/users/update-profile)
+User orders page (GET /api/orders)
+Acceptance: A logged-in user can view their profile and order history
+Milestone 3 — Admin & uploads (Week 3)
+
+Deliverables:
+Admin: product create/edit/delete (POST, PUT, DELETE)
+Admin: upload product images (multipart) wired to backend endpoint
+Admin: category CRUD
+Admin: order status changes (PUT /api/admin/orders/{id}/status)
+Acceptance: Admin user can manage product inventory + upload images
+Milestone 4 — Final QA & Deployment (Week 4)
+
+Deliverables:
+E2E happy-path tests
+Small performance tuning (image caching, lazy loading)
+Deployment guide (frontend build -> host; backend run)
+Acceptance: Production build tested with backend on staging endpoint
+Development flow (sequenced step-by-step)
+Step 0: Setup dev env
+Start backend: ./gradlew bootRun (or run in IDE). Confirm on http://localhost:8080
+Update frontend environment: src/environments/environment.ts → apiUrl = 'http://localhost:8080/api'
+Ensure CORS configured for http://localhost:4200
+Step 1: Implement HTTP client plumbing on frontend
+Create ApiService / HttpInterceptor:
+Interceptor: if token in localStorage add Authorization: Bearer <token>
+Interceptor: centralize error handling (401 → redirect to login)
+Implement ProductService endpoints matching backend paged responses
+Step 2: Wire UI pages one-by-one
+Start with product listing and detail
+Then cart and checkout
+Then auth flows and user profile
+Finally admin area
+Step 3: Test frequently
+Use Postman/Insomnia and browser devtools
+Use backend logs for debugging (verify token decode, CORS headers)
+Step 4: Hardening
+Add retries/backoffs for transient network errors
+Protect routes via Angular Guards (AuthGuard + RoleGuard for admin)
+Validate forms with server error mapping
+Step 5: QA & E2E
+Add Cypress tests for core flows
+Concrete code and tooling suggestions (priority list)
+Frontend
+Implement an Angular AuthService with login/register methods returning LoginResponse (token/user).
+Implement an HttpInterceptor to append Authorization header.
+Update environment.ts and environment.prod.ts with backend apiUrl
+Use Angular Guards for protected routes (AuthGuard, RoleGuard)
+For pagination, adapt to Spring Data Page: map response.content → items and response.totalElements etc.
+For uploads: use FormData and HttpClient.post with reportProgress if you want progress UI.
+Backend
+Provide consistent API error format (ApiResponse wrapper looks good; document it).
+If cart persistence is desired, add CartController endpoints (optional).
+Implement swagger (already present) and publish OpenAPI file to help frontend auto-generate clients (optional).
+Ensure CORS origins are configured via env variable (CORS_ORIGINS).
+Quick smoke-test checklist (how to validate locally now)
+Backend: run
+Set env variables (Windows PowerShell):
+$env:DB_NAME='nova_hotel_db'; $env:DB_USERNAME='root'; $env:DB_PASSWORD='...'; $env:JWT_SECRET='...'
+./gradlew bootRun
+Frontend: run
+Update src/environments/environment.ts apiUrl to http://localhost:8080/api
+npm install
+ng serve
+Test endpoints:
+Public products: GET http://localhost:8080/api/products
+Health test (if available): http://localhost:8080/api/test/health
+Register: curl -X POST http://localhost:8080/auth/register -H "Content-Type: application/json" -d '{...}'
+Login: get token -> then GET /api/users/profile with header Authorization: Bearer <token>
+Example curl for login:
+curl -X POST http://localhost:8080/auth/login -H "Content-Type: application/json" -d "{"usernameOrEmail":"demo","password":"pass"}"
+Example Angular interceptor pseudo:
+intercept(req, next) {
+const token = localStorage.getItem('token');
+const authReq = token ? req.clone({ setHeaders: { Authorization: Bearer ${token} } }) : req;
+return next.handle(authReq);
+}
+Risks & blockers
+Missing backend endpoints (cart persistence, admin order list) will add backend dev time.
+CORS misconfiguration — will produce blocked requests (fix by allowing frontend origin).
+Differences between mock responses in frontend and actual backend payloads — map/transform data at service level.
+File upload path and storage host: if images are stored locally, ensure static resource mapping and deployed URLs work.
+Suggested immediate next steps (I can do these for you)
+I can create a small Angular example service + interceptor and one integrated call (products list) to show the exact code to paste into your frontend.
+Or, I can generate a Postman collection or an OpenAPI client from your backend OpenAPI (since you already have OpenAPI config).
+Or, I can produce a short checklist and run commands for you to run locally to confirm the smoke tests now (e.g., a small list of PowerShell commands).
+Which of the following would you like me to do next?
+
+Generate an Angular AuthService + HttpInterceptor + ProductService code snippets wired to your API (recommended).
+Create a Postman collection (JSON) that covers auth/products/orders for quick manual testing.
+Run a quick automated smoke test here (I can execute curl/Invoke-RestMethod against localhost if you start the backend) — if so, please start the backend and tell me the runtime port, or I can re-run the commands for you.
+Provide a week-by-week gantt-style text schedule with precise day-by-day tasks (more granular timeline).
+Pick an option and I’ll proceed and implement the artifacts.

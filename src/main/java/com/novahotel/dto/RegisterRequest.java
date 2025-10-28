@@ -23,6 +23,10 @@ public class RegisterRequest {
     @NotBlank(message = "Full name is required")
     private String fullName;
     
+    @NotBlank(message = "First name is required")
+    private String firstName;
+    
+    private String lastName;
     private String phoneNumber;
     private String address;
 }

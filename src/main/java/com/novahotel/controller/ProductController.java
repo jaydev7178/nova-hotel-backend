@@ -18,7 +18,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/products")
+@RequestMapping("/products")
 @Tag(name = "Products", description = "Product management endpoints")
 @CrossOrigin(origins = "*")
 public class ProductController {
@@ -43,7 +43,7 @@ public class ProductController {
     
     @GetMapping("/{id}")
     @Operation(summary = "Get product by ID")
-    public ResponseEntity<Product> getProductById(@PathVariable Long id) {
+    public ResponseEntity<Product> getProductById(@PathVariable("id") Long id) {
         Product product = productService.getProductById(id);
         return ResponseEntity.ok(product);
     }
