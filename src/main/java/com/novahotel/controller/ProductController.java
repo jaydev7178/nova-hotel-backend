@@ -1,21 +1,29 @@
 package com.novahotel.controller;
 
-import com.novahotel.entity.Product;
-import com.novahotel.service.ProductService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import java.math.BigDecimal;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.math.BigDecimal;
-import java.util.List;
+import com.novahotel.entity.Product;
+import com.novahotel.service.ProductService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/products")
@@ -29,10 +37,14 @@ public class ProductController {
     @GetMapping
     @Operation(summary = "Get all products with pagination")
     public ResponseEntity<Page<Product>> getAllProducts(
-            @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size,
-            @Parameter(description = "Sort by field") @RequestParam(defaultValue = "name") String sortBy,
-            @Parameter(description = "Sort direction") @RequestParam(defaultValue = "asc") String sortDir) {
+            @Parameter(description = "Page number (0-based)") 
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @Parameter(description = "Page size") 
+            @RequestParam(name = "size", defaultValue = "10") int size,
+            @Parameter(description = "Sort by field") 
+            @RequestParam(name = "sortBy", defaultValue = "name") String sortBy,
+            @Parameter(description = "Sort direction") 
+            @RequestParam(name = "sortDir", defaultValue = "asc") String sortDir) {
         
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
@@ -51,11 +63,11 @@ public class ProductController {
     @GetMapping("/category/{categoryId}")
     @Operation(summary = "Get products by category")
     public ResponseEntity<Page<Product>> getProductsByCategory(
-            @PathVariable Long categoryId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "name") String sortBy,
-            @RequestParam(defaultValue = "asc") String sortDir) {
+            @PathVariable(value = "categoryId") Long categoryId,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size,
+            @RequestParam(value = "sortBy", defaultValue = "name") String sortBy,
+            @RequestParam(value = "sortDir", defaultValue = "asc") String sortDir) {
         
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
@@ -68,10 +80,10 @@ public class ProductController {
     @Operation(summary = "Search products by name")
     public ResponseEntity<Page<Product>> searchProducts(
             @RequestParam String name,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "name") String sortBy,
-            @RequestParam(defaultValue = "asc") String sortDir) {
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size,
+            @RequestParam(value = "sortBy", defaultValue = "name") String sortBy,
+            @RequestParam(value = "sortDir", defaultValue = "asc") String sortDir) {
         
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
@@ -83,12 +95,12 @@ public class ProductController {
     @GetMapping("/search/category/{categoryId}")
     @Operation(summary = "Search products by name within category")
     public ResponseEntity<Page<Product>> searchProductsByCategory(
-            @PathVariable Long categoryId,
+            @PathVariable("categoryId") Long categoryId,
             @RequestParam String name,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "name") String sortBy,
-            @RequestParam(defaultValue = "asc") String sortDir) {
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size,
+            @RequestParam(value = "sortBy", defaultValue = "name") String sortBy,
+            @RequestParam(value = "sortDir", defaultValue = "asc") String sortDir) {
         
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
@@ -100,10 +112,10 @@ public class ProductController {
     @GetMapping("/in-stock")
     @Operation(summary = "Get products in stock")
     public ResponseEntity<Page<Product>> getInStockProducts(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "name") String sortBy,
-            @RequestParam(defaultValue = "asc") String sortDir) {
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size,
+            @RequestParam(value = "sortBy", defaultValue = "name") String sortBy,
+            @RequestParam(value = "sortDir", defaultValue = "asc") String sortDir) {
         
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);

@@ -19,7 +19,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/admin")
+@RequestMapping("/admin")
 @Tag(name = "Admin", description = "Admin management endpoints")
 @CrossOrigin(origins = "*")
 public class AdminController {
@@ -46,28 +46,28 @@ public class AdminController {
     
     @GetMapping("/users/{id}")
     @Operation(summary = "Get user by ID")
-    public ResponseEntity<User> getUserById(@PathVariable Long id) {
+    public ResponseEntity<User> getUserById(@PathVariable("id") Long id) {
         User user = userService.getUserById(id);
         return ResponseEntity.ok(user);
     }
     
     @PutMapping("/users/{id}")
     @Operation(summary = "Update user")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @Valid @RequestBody User user) {
+    public ResponseEntity<User> updateUser(@PathVariable("id") Long id, @Valid @RequestBody User user) {
         User updatedUser = userService.updateUser(id, user);
         return ResponseEntity.ok(updatedUser);
     }
     
     @PutMapping("/users/{id}/deactivate")
     @Operation(summary = "Deactivate user")
-    public ResponseEntity<?> deactivateUser(@PathVariable Long id) {
+    public ResponseEntity<?> deactivateUser(@PathVariable("id") Long id) {
         userService.deactivateUser(id);
         return ResponseEntity.ok(new ApiResponse(true, "User deactivated successfully", null));
     }
     
     @PutMapping("/users/{id}/activate")
     @Operation(summary = "Activate user")
-    public ResponseEntity<?> activateUser(@PathVariable Long id) {
+    public ResponseEntity<?> activateUser(@PathVariable("id") Long id) {
         userService.activateUser(id);
         return ResponseEntity.ok(new ApiResponse(true, "User activated successfully", null));
     }
@@ -82,28 +82,28 @@ public class AdminController {
     
     @PutMapping("/categories/{id}")
     @Operation(summary = "Update category")
-    public ResponseEntity<Category> updateCategory(@PathVariable Long id, @Valid @RequestBody Category category) {
+    public ResponseEntity<Category> updateCategory(@PathVariable("id") Long id, @Valid @RequestBody Category category) {
         Category updatedCategory = categoryService.updateCategory(id, category);
         return ResponseEntity.ok(updatedCategory);
     }
     
     @DeleteMapping("/categories/{id}")
     @Operation(summary = "Delete category")
-    public ResponseEntity<?> deleteCategory(@PathVariable Long id) {
+    public ResponseEntity<?> deleteCategory(@PathVariable("id") Long id) {
         categoryService.deleteCategory(id);
         return ResponseEntity.ok(new ApiResponse(true, "Category deleted successfully", null));
     }
     
     @PutMapping("/categories/{id}/deactivate")
     @Operation(summary = "Deactivate category")
-    public ResponseEntity<?> deactivateCategory(@PathVariable Long id) {
+    public ResponseEntity<?> deactivateCategory(@PathVariable("id") Long id) {
         categoryService.deactivateCategory(id);
         return ResponseEntity.ok(new ApiResponse(true, "Category deactivated successfully", null));
     }
     
     @PutMapping("/categories/{id}/activate")
     @Operation(summary = "Activate category")
-    public ResponseEntity<?> activateCategory(@PathVariable Long id) {
+    public ResponseEntity<?> activateCategory(@PathVariable("id") Long id) {
         categoryService.activateCategory(id);
         return ResponseEntity.ok(new ApiResponse(true, "Category activated successfully", null));
     }
@@ -118,21 +118,21 @@ public class AdminController {
     
     @PutMapping("/products/{id}")
     @Operation(summary = "Update product")
-    public ResponseEntity<Product> updateProduct(@PathVariable Long id, @Valid @RequestBody Product product) {
+    public ResponseEntity<Product> updateProduct(@PathVariable("id") Long id, @Valid @RequestBody Product product) {
         Product updatedProduct = productService.updateProduct(id, product);
         return ResponseEntity.ok(updatedProduct);
     }
     
     @PutMapping("/products/{id}/deactivate")
     @Operation(summary = "Deactivate product")
-    public ResponseEntity<?> deactivateProduct(@PathVariable Long id) {
+    public ResponseEntity<?> deactivateProduct(@PathVariable("id") Long id) {
         productService.deactivateProduct(id);
         return ResponseEntity.ok(new ApiResponse(true, "Product deactivated successfully", null));
     }
     
     @PutMapping("/products/{id}/activate")
     @Operation(summary = "Activate product")
-    public ResponseEntity<?> activateProduct(@PathVariable Long id) {
+    public ResponseEntity<?> activateProduct(@PathVariable("id") Long id) {
         productService.activateProduct(id);
         return ResponseEntity.ok(new ApiResponse(true, "Product activated successfully", null));
     }
@@ -183,7 +183,7 @@ public class AdminController {
     
     @PutMapping("/orders/{id}/status")
     @Operation(summary = "Update order status")
-    public ResponseEntity<?> updateOrderStatus(@PathVariable Long id, @RequestBody StatusUpdateRequest request) {
+    public ResponseEntity<?> updateOrderStatus(@PathVariable("id") Long id, @RequestBody StatusUpdateRequest request) {
         try {
             Order updatedOrder = orderService.updateOrderStatus(id, request.getStatus());
             return ResponseEntity.ok(new ApiResponse(true, "Order status updated successfully", updatedOrder));

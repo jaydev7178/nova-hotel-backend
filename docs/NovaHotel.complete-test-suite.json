@@ -1,0 +1,957 @@
+{
+    "info": {
+        "name": "Nova Hotel Complete Test Suite",
+        "description": "Comprehensive API test suite covering all endpoints with test cases",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "1. Authentication",
+            "description": "Authentication and user management endpoints",
+            "item": [
+                {
+                    "name": "Register User",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "exec": [
+                                    "pm.environment.set('retryCount', 0);",
+                                    "pm.environment.set('userEmail', pm.variables.replaceIn('{{$randomEmail}}'));",
+                                    "pm.environment.set('username', pm.variables.replaceIn('user_{{$randomUserName}}'));",
+                                    "console.log('Starting registration with:', {",
+                                    "    email: pm.environment.get('userEmail'),",
+                                    "    username: pm.environment.get('username')",
+                                    "});"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('TC-REG-01: Registration Response Structure', () => {",
+                                    "    const response = pm.response.json();",
+                                    "",
+                                    "    pm.expect(response).to.have.property('success');",
+                                    "    pm.expect(response).to.have.property('message');",
+                                    "    pm.expect(response).to.have.property('data');",
+                                    "",
+                                    "    if (response.data) {",
+                                    "        pm.expect(response.data).to.have.property('token');",
+                                    "        pm.expect(response.data).to.have.property('user');",
+                                    "        pm.expect(response.data.user).to.have.property('id');",
+                                    "    }",
+                                    "});",
+                                    "",
+                                    "pm.test('TC-REG-02: Registration Success', () => {",
+                                    "    const maxRetries = 2;",
+                                    "    const response = pm.response.json();",
+                                    "",
+                                    "    if (pm.response.code === 201 && response.success) {",
+                                    "        pm.environment.set('userId', response.data.user.id);",
+                                    "        pm.environment.set('userToken', response.data.token);",
+                                    "        console.log('Registration successful. User ID:', response.data.user.id);",
+                                    "    } else {",
+                                    "        const retryCount = parseInt(pm.environment.get('retryCount')) || 0;",
+                                    "        if (retryCount < maxRetries) {",
+                                    "            pm.environment.set('retryCount', retryCount + 1);",
+                                    "            pm.environment.set('userEmail', pm.variables.replaceIn('{{$randomEmail}}'));",
+                                    "            pm.environment.set('username', pm.variables.replaceIn('user_{{$randomUserName}}'));",
+                                    "            console.log(`Registration failed. Retrying with new credentials`);",
+                                    "            postman.setNextRequest('Register User');",
+                                    "        } else {",
+                                    "            throw new Error('Registration failed after maximum retries');",
+                                    "        }",
+                                    "    }",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"username\": \"{{username}}\",\n    \"email\": \"{{userEmail}}\",\n    \"password\": \"{{userPassword}}\",\n    \"firstName\": \"Test\",\n    \"lastName\": \"User\",\n    \"phoneNumber\": \"1234567890\",\n    \"address\": \"123 Test St, Test City\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/register",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "register"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Login User",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "exec": [
+                                    "pm.environment.set('retryCount', 0);",
+                                    "console.log('Attempting login with username:', pm.environment.get('username'));"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('TC-LOG-01: Login Response Structure', () => {",
+                                    "    const response = pm.response.json();",
+                                    "    ",
+                                    "    pm.expect(response).to.have.property('success');",
+                                    "    pm.expect(response).to.have.property('message');",
+                                    "    pm.expect(response).to.have.property('data');",
+                                    "    ",
+                                    "    if (response.data) {",
+                                    "        pm.expect(response.data).to.have.property('token');",
+                                    "        pm.expect(response.data).to.have.property('user');",
+                                    "    }",
+                                    "});",
+                                    "",
+                                    "pm.test('TC-LOG-02: Login Success', () => {",
+                                    "    const response = pm.response.json();",
+                                    "",
+                                    "    if (pm.response.code === 200 && response.success) {",
+                                    "        pm.environment.set('userToken', response.data.token);",
+                                    "        console.log('Login successful. Token received.');",
+                                    "    } else {",
+                                    "        const retryCount = parseInt(pm.environment.get('retryCount')) || 0;",
+                                    "        if (retryCount < 2) {",
+                                    "            pm.environment.set('retryCount', retryCount + 1);",
+                                    "            console.log('Login failed. Retrying registration...');",
+                                    "            postman.setNextRequest('Register User');",
+                                    "        } else {",
+                                    "            throw new Error('Login failed after retries');",
+                                    "        }",
+                                    "    }",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"usernameOrEmail\": \"{{username}}\",\n    \"password\": \"{{userPassword}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "2. Products",
+            "description": "Product management endpoints",
+            "item": [
+                {
+                    "name": "Get All Products",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('TC-PROD-01: Get Products Response Structure', () => {",
+                                    "    const response = pm.response.json();",
+                                    "",
+                                    "    pm.expect(response).to.have.property('content');",
+                                    "    pm.expect(response).to.have.property('totalElements');",
+                                    "    pm.expect(response).to.have.property('totalPages');",
+                                    "",
+                                    "    if (response.content && response.content.length > 0) {",
+                                    "        pm.environment.set('productId', response.content[0].id);",
+                                    "        console.log('Product selected:', response.content[0].id);",
+                                    "    }",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{userToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/products?page=0&size=10&sortBy=name&sortDir=asc",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "products"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "0"
+                                },
+                                {
+                                    "key": "size",
+                                    "value": "10"
+                                },
+                                {
+                                    "key": "sortBy",
+                                    "value": "name"
+                                },
+                                {
+                                    "key": "sortDir",
+                                    "value": "asc"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Products By Category",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('TC-PROD-03: Category Products Response', () => {",
+                                    "    const response = pm.response.json();",
+                                    "",
+                                    "    pm.expect(response).to.have.property('content');",
+                                    "    pm.expect(response).to.have.property('totalElements');",
+                                    "",
+                                    "    if (response.content && response.content.length > 0) {",
+                                    "        pm.expect(response.content[0]).to.have.property('categoryId');",
+                                    "        pm.expect(response.content[0].categoryId).to.equal(pm.environment.get('categoryId'));",
+                                    "    }",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{userToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/products/category/{{categoryId}}?page=0&size=10&sortBy=name&sortDir=asc",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "products",
+                                "category",
+                                "{{categoryId}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "0"
+                                },
+                                {
+                                    "key": "size",
+                                    "value": "10"
+                                },
+                                {
+                                    "key": "sortBy",
+                                    "value": "name"
+                                },
+                                {
+                                    "key": "sortDir",
+                                    "value": "asc"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Search Products",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('TC-PROD-04: Search Products Response', () => {",
+                                    "    const response = pm.response.json();",
+                                    "",
+                                    "    pm.expect(response).to.have.property('content');",
+                                    "    pm.expect(response).to.have.property('totalElements');",
+                                    "",
+                                    "    if (response.content && response.content.length > 0) {",
+                                    "        const searchTerm = pm.request.url.query.get('name').toLowerCase();",
+                                    "        const firstProduct = response.content[0].name.toLowerCase();",
+                                    "        pm.expect(firstProduct).to.include(searchTerm);",
+                                    "    }",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{userToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/products/search?name=test&page=0&size=10",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "products",
+                                "search"
+                            ],
+                            "query": [
+                                {
+                                    "key": "name",
+                                    "value": "test"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "0"
+                                },
+                                {
+                                    "key": "size",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get In-Stock Products",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('TC-PROD-05: In-Stock Products Response', () => {",
+                                    "    const response = pm.response.json();",
+                                    "",
+                                    "    pm.expect(response).to.have.property('content');",
+                                    "    pm.expect(response).to.have.property('totalElements');",
+                                    "",
+                                    "    if (response.content && response.content.length > 0) {",
+                                    "        response.content.forEach(product => {",
+                                    "            pm.expect(product.stockQuantity).to.be.greaterThan(0);",
+                                    "        });",
+                                    "    }",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{userToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/products/in-stock?page=0&size=10&sortBy=name&sortDir=asc",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "products",
+                                "in-stock"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "0"
+                                },
+                                {
+                                    "key": "size",
+                                    "value": "10"
+                                },
+                                {
+                                    "key": "sortBy",
+                                    "value": "name"
+                                },
+                                {
+                                    "key": "sortDir",
+                                    "value": "asc"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Products by Price Range",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('TC-PROD-06: Price Range Products Response', () => {",
+                                    "    const response = pm.response.json();",
+                                    "    const minPrice = parseFloat(pm.request.url.query.get('minPrice'));",
+                                    "    const maxPrice = parseFloat(pm.request.url.query.get('maxPrice'));",
+                                    "",
+                                    "    pm.expect(response).to.have.property('content');",
+                                    "",
+                                    "    if (response.content && response.content.length > 0) {",
+                                    "        response.content.forEach(product => {",
+                                    "            pm.expect(product.price).to.be.at.least(minPrice);",
+                                    "            pm.expect(product.price).to.be.at.most(maxPrice);",
+                                    "        });",
+                                    "    }",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{userToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/products/price-range?minPrice=10&maxPrice=100&page=0&size=10",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "products",
+                                "price-range"
+                            ],
+                            "query": [
+                                {
+                                    "key": "minPrice",
+                                    "value": "10"
+                                },
+                                {
+                                    "key": "maxPrice",
+                                    "value": "100"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "0"
+                                },
+                                {
+                                    "key": "size",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "3. Categories",
+            "description": "Category management endpoints",
+            "item": [
+                {
+                    "name": "Get All Categories",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('TC-CAT-01: Categories Response', () => {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.expect(response).to.be.an('array');",
+                                    "    if (response.length > 0) { pm.environment.set('categoryId', response[0].id); }",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{userToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/categories",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "categories"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Admin - Categories",
+            "description": "Admin category management endpoints (admin only)",
+            "item": [
+                {
+                    "name": "Admin: Get All Categories",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{userToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/admin/categories",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "admin",
+                                "categories"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('TC-ADMIN-CAT-01: Admin Get All Categories', () => {",
+                                    "  const r = pm.response.json();",
+                                    "  pm.expect(r).to.be.an('array');",
+                                    "  if (r.length > 0) pm.environment.set('adminCategoryId', r[0].id);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Admin: Create Category",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{userToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Test Category {{randomInt}}\",\n  \"description\": \"Created by automated test\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/admin/categories",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "admin",
+                                "categories"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('TC-ADMIN-CAT-02: Create Category', () => {",
+                                    "  pm.expect(pm.response.code).to.be.oneOf([200,201]);",
+                                    "  const r = pm.response.json();",
+                                    "  if (r && r.id) pm.environment.set('adminCreatedCategoryId', r.id);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Admin: Update Category",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{userToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Updated Category {{randomInt}}\",\n  \"description\": \"Updated by automated test\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/admin/categories/{{adminCategoryId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "admin",
+                                "categories",
+                                "{{adminCategoryId}}"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('TC-ADMIN-CAT-03: Update Category', () => { pm.expect(pm.response.code).to.equal(200); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Admin: Deactivate Category",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{userToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/admin/categories/{{adminCategoryId}}/deactivate",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "admin",
+                                "categories",
+                                "{{adminCategoryId}}",
+                                "deactivate"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('TC-ADMIN-CAT-04: Deactivate Category', () => { pm.expect(pm.response.code).to.be.oneOf([200]); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Admin: Activate Category",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{userToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/admin/categories/{{adminCategoryId}}/activate",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "admin",
+                                "categories",
+                                "{{adminCategoryId}}",
+                                "activate"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('TC-ADMIN-CAT-05: Activate Category', () => { pm.expect(pm.response.code).to.be.oneOf([200]); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Admin: Delete Category",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{userToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/admin/categories/{{adminCategoryId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "admin",
+                                "categories",
+                                "{{adminCategoryId}}"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('TC-ADMIN-CAT-06: Delete Category', () => { pm.expect(pm.response.code).to.be.oneOf([200,204]); });"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Admin - Users",
+            "description": "Admin user management endpoints (admin only)",
+            "item": [
+                {
+                    "name": "Admin: Get All Users",
+                    "request": {
+                        "method": "GET",
+                        "header": [ { "key": "Authorization", "value": "Bearer {{userToken}}" } ],
+                        "url": { "raw": "{{baseUrl}}/api/admin/users", "host": ["{{baseUrl}}"], "path": ["api","admin","users"] }
+                    },
+                    "event": [ { "listen": "test", "script": { "exec": [ "pm.test('TC-ADMIN-USR-01: Get all users', () => { const r = pm.response.json(); pm.expect(r).to.be.an('array'); if (r.length>0) pm.environment.set('adminUserId', r[0].id); });" ] } } ]
+                },
+                {
+                    "name": "Admin: Get User By ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [ { "key": "Authorization", "value": "Bearer {{userToken}}" } ],
+                        "url": { "raw": "{{baseUrl}}/api/admin/users/{{adminUserId}}", "host": ["{{baseUrl}}"], "path": ["api","admin","users","{{adminUserId}}"] }
+                    },
+                    "event": [ { "listen": "test", "script": { "exec": [ "pm.test('TC-ADMIN-USR-02: Get user by id', () => { pm.expect(pm.response.code).to.be.oneOf([200]); });" ] } } ]
+                },
+                {
+                    "name": "Admin: Update User",
+                    "request": {
+                        "method": "PUT",
+                        "header": [ { "key": "Authorization", "value": "Bearer {{userToken}}" }, { "key": "Content-Type", "value": "application/json" } ],
+                        "body": { "mode": "raw", "raw": "{\n  \"firstName\": \"Updated\",\n  \"lastName\": \"User\"\n}", "options": { "raw": { "language": "json" } } },
+                        "url": { "raw": "{{baseUrl}}/api/admin/users/{{adminUserId}}", "host": ["{{baseUrl}}"], "path": ["api","admin","users","{{adminUserId}}"] }
+                    },
+                    "event": [ { "listen": "test", "script": { "exec": [ "pm.test('TC-ADMIN-USR-03: Update user returns 200', () => { pm.expect(pm.response.code).to.equal(200); });" ] } } ]
+                },
+                {
+                    "name": "Admin: Deactivate User",
+                    "request": {
+                        "method": "PUT",
+                        "header": [ { "key": "Authorization", "value": "Bearer {{userToken}}" } ],
+                        "url": { "raw": "{{baseUrl}}/api/admin/users/{{adminUserId}}/deactivate", "host": ["{{baseUrl}}"], "path": ["api","admin","users","{{adminUserId}}","deactivate"] }
+                    },
+                    "event": [ { "listen": "test", "script": { "exec": [ "pm.test('TC-ADMIN-USR-04: Deactivate user', () => { pm.expect(pm.response.code).to.be.oneOf([200]); });" ] } } ]
+                },
+                {
+                    "name": "Admin: Activate User",
+                    "request": {
+                        "method": "PUT",
+                        "header": [ { "key": "Authorization", "value": "Bearer {{userToken}}" } ],
+                        "url": { "raw": "{{baseUrl}}/api/admin/users/{{adminUserId}}/activate", "host": ["{{baseUrl}}"], "path": ["api","admin","users","{{adminUserId}}","activate"] }
+                    },
+                    "event": [ { "listen": "test", "script": { "exec": [ "pm.test('TC-ADMIN-USR-05: Activate user', () => { pm.expect(pm.response.code).to.be.oneOf([200]); });" ] } } ]
+                }
+            ]
+        },
+        {
+            "name": "Admin - Products",
+            "description": "Admin product management endpoints (admin only)",
+            "item": [
+                {
+                    "name": "Admin: Create Product",
+                    "request": {
+                        "method": "POST",
+                        "header": [ { "key": "Authorization", "value": "Bearer {{userToken}}" }, { "key": "Content-Type", "value": "application/json" } ],
+                        "body": { "mode": "raw", "raw": "{\n  \"name\": \"Test Product {{randomInt}}\",\n  \"price\": 9.99,\n  \"stockQuantity\": 10,\n  \"categoryId\": {{adminCategoryId}}\n}", "options": { "raw": { "language": "json" } } },
+                        "url": { "raw": "{{baseUrl}}/api/admin/products", "host": ["{{baseUrl}}"], "path": ["api","admin","products"] }
+                    },
+                    "event": [ { "listen": "test", "script": { "exec": [ "pm.test('TC-ADMIN-PROD-01: Create product', () => { pm.expect(pm.response.code).to.be.oneOf([200,201]); const r=pm.response.json(); if (r && r.id) pm.environment.set('adminProductId', r.id); });" ] } } ]
+                },
+                {
+                    "name": "Admin: Update Product",
+                    "request": {
+                        "method": "PUT",
+                        "header": [ { "key": "Authorization", "value": "Bearer {{userToken}}" }, { "key": "Content-Type", "value": "application/json" } ],
+                        "body": { "mode": "raw", "raw": "{\n  \"name\": \"Updated Product {{randomInt}}\",\n  \"price\": 19.99\n}", "options": { "raw": { "language": "json" } } },
+                        "url": { "raw": "{{baseUrl}}/api/admin/products/{{adminProductId}}", "host": ["{{baseUrl}}"], "path": ["api","admin","products","{{adminProductId}}"] }
+                    },
+                    "event": [ { "listen": "test", "script": { "exec": [ "pm.test('TC-ADMIN-PROD-02: Update product returns 200', () => { pm.expect(pm.response.code).to.equal(200); });" ] } } ]
+                },
+                {
+                    "name": "Admin: Deactivate Product",
+                    "request": { "method": "PUT", "header": [ { "key": "Authorization", "value": "Bearer {{userToken}}" } ], "url": { "raw": "{{baseUrl}}/api/admin/products/{{adminProductId}}/deactivate", "host": ["{{baseUrl}}"], "path": ["api","admin","products","{{adminProductId}}","deactivate"] } },
+                    "event": [ { "listen": "test", "script": { "exec": [ "pm.test('TC-ADMIN-PROD-03: Deactivate product', () => { pm.expect(pm.response.code).to.be.oneOf([200]); });" ] } } ]
+                },
+                {
+                    "name": "Admin: Activate Product",
+                    "request": { "method": "PUT", "header": [ { "key": "Authorization", "value": "Bearer {{userToken}}" } ], "url": { "raw": "{{baseUrl}}/api/admin/products/{{adminProductId}}/activate", "host": ["{{baseUrl}}"], "path": ["api","admin","products","{{adminProductId}}","activate"] } },
+                    "event": [ { "listen": "test", "script": { "exec": [ "pm.test('TC-ADMIN-PROD-04: Activate product', () => { pm.expect(pm.response.code).to.be.oneOf([200]); });" ] } } ]
+                },
+                {
+                    "name": "Admin: Upload Product Image",
+                    "request": {
+                        "method": "POST",
+                        "header": [ { "key": "Authorization", "value": "Bearer {{userToken}}" } ],
+                        "body": { "mode": "formdata", "formdata": [ { "key": "file", "type": "file", "src": "" } ] },
+                        "url": { "raw": "{{baseUrl}}/api/admin/products/upload-image", "host": ["{{baseUrl}}"], "path": ["api","admin","products","upload-image"] }
+                    },
+                    "event": [ { "listen": "test", "script": { "exec": [ "pm.test('TC-ADMIN-PROD-05: Upload image returns 200', () => { pm.expect(pm.response.code).to.be.oneOf([200]); });" ] } } ]
+                }
+            ]
+        },
+        {
+            "name": "Admin - Orders",
+            "description": "Admin order management endpoints (admin only)",
+            "item": [
+                {
+                    "name": "Admin: Get All Orders",
+                    "request": {
+                        "method": "GET",
+                        "header": [ { "key": "Authorization", "value": "Bearer {{userToken}}" } ],
+                        "url": { "raw": "{{baseUrl}}/api/admin/orders?page=0&size=10&sortBy=createdAt&sortDir=desc", "host": ["{{baseUrl}}"], "path": ["api","admin","orders"], "query": [ { "key": "page", "value": "0" }, { "key": "size", "value": "10" }, { "key": "sortBy", "value": "createdAt" }, { "key": "sortDir", "value": "desc" } ] }
+                    },
+                    "event": [ { "listen": "test", "script": { "exec": [ "pm.test('TC-ADMIN-ORD-01: Get all orders', () => { pm.expect(pm.response.code).to.equal(200); const r=pm.response.json(); if (r && r.content && r.content.length>0) pm.environment.set('adminOrderId', r.content[0].id); });" ] } } ]
+                },
+                {
+                    "name": "Admin: Get Orders By Status",
+                    "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{userToken}}" } ], "url": { "raw": "{{baseUrl}}/api/admin/orders/status/PENDING?page=0&size=10", "host": ["{{baseUrl}}"], "path": ["api","admin","orders","status","PENDING"] } },
+                    "event": [ { "listen": "test", "script": { "exec": [ "pm.test('TC-ADMIN-ORD-02: Get orders by status', () => { pm.expect(pm.response.code).to.equal(200); });" ] } } ]
+                },
+                {
+                    "name": "Admin: Update Order Status",
+                    "request": {
+                        "method": "PUT",
+                        "header": [ { "key": "Authorization", "value": "Bearer {{userToken}}" }, { "key": "Content-Type", "value": "application/json" } ],
+                        "body": { "mode": "raw", "raw": "{\n  \"status\": \"DELIVERED\"\n}", "options": { "raw": { "language": "json" } } },
+                        "url": { "raw": "{{baseUrl}}/api/admin/orders/{{adminOrderId}}/status", "host": ["{{baseUrl}}"], "path": ["api","admin","orders","{{adminOrderId}}","status"] }
+                    },
+                    "event": [ { "listen": "test", "script": { "exec": [ "pm.test('TC-ADMIN-ORD-03: Update order status', () => { pm.expect(pm.response.code).to.equal(200); });" ] } } ]
+                },
+                {
+                    "name": "Admin: Get Order Stats",
+                    "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{userToken}}" } ], "url": { "raw": "{{baseUrl}}/api/admin/orders/stats", "host": ["{{baseUrl}}"], "path": ["api","admin","orders","stats"] } },
+                    "event": [ { "listen": "test", "script": { "exec": [ "pm.test('TC-ADMIN-ORD-04: Get order stats', () => { pm.expect(pm.response.code).to.equal(200); });" ] } } ]
+                }
+            ]
+        },
+        {
+            "name": "4. Orders",
+            "description": "Order management endpoints",
+            "item": [
+                {
+                    "name": "Create Order",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('TC-ORD-01: Order Creation Response', () => {",
+                                    "    const response = pm.response.json();",
+                                    "",
+                                    "    pm.expect(response).to.have.property('success');",
+                                    "    pm.expect(response).to.have.property('data');",
+                                    "",
+                                    "    if (response.success && response.data) {",
+                                    "        pm.environment.set('orderId', response.data.id);",
+                                    "        pm.expect(response.data).to.have.property('orderNumber');",
+                                    "        pm.expect(response.data).to.have.property('status');",
+                                    "        console.log('Order created:', response.data.id);",
+                                    "    }",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{userToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"cartItems\": [{\n        \"productId\": \"{{productId}}\",\n        \"quantity\": 1\n    }],\n    \"shippingAddress\": {\n        \"street\": \"123 Test St\",\n        \"city\": \"Test City\",\n        \"zipCode\": \"12345\"\n    },\n    \"notes\": \"Test order\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/orders/checkout",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "orders",
+                                "checkout"
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

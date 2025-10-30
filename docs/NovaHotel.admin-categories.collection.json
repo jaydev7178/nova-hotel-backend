@@ -1,0 +1,73 @@
+{
+  "info": {
+    "name": "Nova Hotel Admin - Categories",
+    "description": "Admin category endpoints for Nova Hotel (create/update/delete/activate/deactivate/get-all)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get All Categories (Admin)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{userToken}}" }
+        ],
+        "url": { "raw": "{{baseUrl}}/api/admin/categories", "host": ["{{baseUrl}}"], "path": ["api","admin","categories"] }
+      },
+      "event": [ { "listen": "test", "script": { "exec": [ "pm.test('Admin get all categories returns array', () => { const r = pm.response.json(); pm.expect(r).to.be.an('array'); if (r.length>0) pm.environment.set('adminCategoryId', r[0].id); });" ] } } ]
+    },
+    {
+      "name": "Create Category (Admin)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{userToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"name\": \"Test Category {{randomInt}}\",\n  \"description\": \"Created by automated test\"\n}" },
+        "url": { "raw": "{{baseUrl}}/api/admin/categories", "host": ["{{baseUrl}}"], "path": ["api","admin","categories"] }
+      },
+      "event": [ { "listen": "test", "script": { "exec": [ "pm.test('Create category returns 201 or 200', () => { pm.expect(pm.response.code).to.be.oneOf([200,201]); const r = pm.response.json(); if (r && r.id) pm.environment.set('adminCreatedCategoryId', r.id); });" ] } } ]
+    },
+    {
+      "name": "Update Category (Admin)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{userToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"name\": \"Updated Category {{randomInt}}\",\n  \"description\": \"Updated by automated test\"\n}" },
+        "url": { "raw": "{{baseUrl}}/api/admin/categories/{{adminCategoryId}}", "host": ["{{baseUrl}}"], "path": ["api","admin","categories","{{adminCategoryId}}"] }
+      },
+      "event": [ { "listen": "test", "script": { "exec": [ "pm.test('Update returns 200', () => { pm.expect(pm.response.code).to.equal(200); });" ] } } ]
+    },
+    {
+      "name": "Deactivate Category (Admin)",
+      "request": {
+        "method": "PUT",
+        "header": [ { "key": "Authorization", "value": "Bearer {{userToken}}" } ],
+        "url": { "raw": "{{baseUrl}}/api/admin/categories/{{adminCategoryId}}/deactivate", "host": ["{{baseUrl}}"], "path": ["api","admin","categories","{{adminCategoryId}}","deactivate"] }
+      },
+      "event": [ { "listen": "test", "script": { "exec": [ "pm.test('Deactivate returns 200', () => { pm.expect(pm.response.code).to.be.oneOf([200]); });" ] } } ]
+    },
+    {
+      "name": "Activate Category (Admin)",
+      "request": {
+        "method": "PUT",
+        "header": [ { "key": "Authorization", "value": "Bearer {{userToken}}" } ],
+        "url": { "raw": "{{baseUrl}}/api/admin/categories/{{adminCategoryId}}/activate", "host": ["{{baseUrl}}"], "path": ["api","admin","categories","{{adminCategoryId}}","activate"] }
+      },
+      "event": [ { "listen": "test", "script": { "exec": [ "pm.test('Activate returns 200', () => { pm.expect(pm.response.code).to.be.oneOf([200]); });" ] } } ]
+    },
+    {
+      "name": "Delete Category (Admin)",
+      "request": {
+        "method": "DELETE",
+        "header": [ { "key": "Authorization", "value": "Bearer {{userToken}}" } ],
+        "url": { "raw": "{{baseUrl}}/api/admin/categories/{{adminCategoryId}}", "host": ["{{baseUrl}}"], "path": ["api","admin","categories","{{adminCategoryId}}"] }
+      },
+      "event": [ { "listen": "test", "script": { "exec": [ "pm.test('Delete returns 200 or 204', () => { pm.expect(pm.response.code).to.be.oneOf([200,204]); });" ] } } ]
+    }
+  ]
+}

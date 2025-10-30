@@ -41,7 +41,7 @@ public class Category {
     private LocalDateTime updatedAt;
     
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference
+    //@JsonManagedReference
     private List<Product> products;
     
     @PrePersist

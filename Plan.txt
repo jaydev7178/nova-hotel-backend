@@ -1,3 +1,125 @@
+What I’ve Done:
+
+Frontend: Built a static website.
+Currently Working On: Backend development.
+
+🧩 Steps for Development and Deployment:
+
+1. Identify and define the API flow (for both User and Admin).
+2. Develop all required APIs (including additional supporting APIs).
+3. Create a Postman collection representing the complete API flow (for both User and Admin).
+4. Use the Postman collection to integrate the backend with the frontend.
+5. Test the frontend flow for both User and Admin.
+6. Test the full flow locally.
+7. Set up the development environment and configure the database accordingly.
+7.1 Run database migrations and seed initial data if needed.
+8. Deploy the development environment to the test server.
+9. Review and retest on the test server.
+10. Re-review and obtain final approval.
+11. Set up and configure the production server (both frontend and backend).
+12. Deploy to the production server.
+13. Verify the production flow.
+14. Mark the project as ready for use.
+15. Set up monitoring and logging to track system performance and errors in production.
+
+Flow of the User :
+
+1. Can visit the website (if try's to Add to Cart check for the User refer point 2)
+2. Register User with Email-Mobile (if already refer point 3)
+3. Login to website as "CUSTOMER"
+4. Can continue Add to cart to the Product, (Can add additional as required)
+4.1. Cart to Checkout (Initial Order Creation)
+4.2. Terms Acceptance
+4.3. Payment Process
+4.4. Delivery Process
+Order Status Flow
+PENDING → APPROVED → PAYMENT_INFO_SENT → PAYMENT_CONFIRMED → DELIVERY_INITIATED → DELIVERED
+
+
+-- additional Details in technical point of view --
+We are using below table to order the product :
+orders, order_items and products
+And Below is the Order Flow Process :
+1. Cart to Checkout (Initial Order Creation):
+User sends a POST request to /api/orders/checkout with:
+{
+  "cartItems": {
+    "productId": quantity,
+    ...
+  },
+  "shippingAddress": "delivery address",
+  "notes": "optional notes"
+}
+** The OrderService.createOrder() method:
+- Validates stock availability
+- Calculates total amount
+- Creates order with PENDING status
+- Creates order items
+- Sends confirmation emails
+
+2. Terms Acceptance:
+** User must accept terms via PUT /api/orders/{id}/accept-terms
+** System:
+- Verifies order ownership
+- Updates order status to APPROVED
+- Updates product stock quantities
+- Sets terms_accepted = true
+
+3. Payment Process:
+** Admin sends payment info: PUT /api/orders/{id}/send-payment-info
+- Updates status to PAYMENT_INFO_SENT
+** Admin confirms payment: PUT /api/orders/{id}/confirm-payment
+- Updates status to PAYMENT_CONFIRMED
+
+4. Delivery Process:
+** Admin initiates delivery: PUT /api/orders/{id}/initiate-delivery
+- Updates status to DELIVERY_INITIATED
+** Admin marks as delivered: PUT /api/orders/{id}/mark-delivered
+- Updates status to DELIVERE
+
+Order Status Flow
+PENDING → APPROVED → PAYMENT_INFO_SENT → PAYMENT_CONFIRMED → DELIVERY_INITIATED → DELIVERED
+
+-- End of additional order --
+
+-- Security and Validation --
+1. Access Control:
+** All endpoints require authentication
+** Order access is restricted to:
+- The order owner (customer)
+- Admin users
+- Owner users
+
+2. Stock Validation:
+if (product.getStockQuantity() < quantity) {
+    throw new RuntimeException("Insufficient stock for product: " + product.getName());
+}
+
+3. Order Status Validation:
+if (order.getStatus() != Order.OrderStatus.PENDING) {
+    throw new RuntimeException("Order cannot be updated in current status");
+}
+-- END Security and Validation --
+
+-- Email Notifications --
+**The system sends email notifications at key points:
+- Order confirmation to customer
+- Order notification to owner
+- Payment information to customer
+- Delivery initiation notification
+This is handled by the EmailService which is injected into the OrderService.
+
+-- END Email Notifications --
+
+-- Transaction Management --
+The entire order process is managed with @Transactional annotations to ensure data consistency, particularly important during:
+- Order creation (multiple table updates)
+- Stock updates
+- Status changes
+This implementation provides a robust order management system with proper validation, security, and status tracking from cart to delivery.
+
+-- END Transaction Management --
+
 Good — I reviewed the frontend README you linked and the backend code in your workspace. Below is a concise, actionable integration plan that maps frontend pages to backend APIs, shows exact endpoints and request/response shapes, and gives a practical timeline and workflow you can follow to finish integration reliably.
 
 If you want, I can immediately generate Postman collection / OpenAPI client examples or make a small sample Angular service + interceptor for one endpoint to demonstrate.
