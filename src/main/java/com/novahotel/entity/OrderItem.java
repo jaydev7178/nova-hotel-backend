@@ -10,6 +10,8 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 @Entity
 @Table(name = "order_items")
 @Data
@@ -24,11 +26,13 @@ public class OrderItem {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
     @NotNull(message = "Order is required")
+    @JsonBackReference
     private Order order;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
     @NotNull(message = "Product is required")
+    @JsonBackReference
     private Product product;
     
     @NotNull(message = "Quantity is required")

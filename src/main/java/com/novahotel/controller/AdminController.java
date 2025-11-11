@@ -1,5 +1,6 @@
 package com.novahotel.controller;
 
+import com.novahotel.dto.OrderDTO;
 import com.novahotel.entity.*;
 import com.novahotel.service.*;
 import io.swagger.v3.oas.annotations.Operation;
@@ -152,32 +153,32 @@ public class AdminController {
     @GetMapping("/orders")
     @Operation(summary = "Get all orders with pagination")
     public ResponseEntity<Page<Order>> getAllOrders(
-            @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size,
-            @Parameter(description = "Sort by field") @RequestParam(defaultValue = "createdAt") String sortBy,
-            @Parameter(description = "Sort direction") @RequestParam(defaultValue = "desc") String sortDir) {
+            @Parameter(description = "Page number (0-based)") @RequestParam(value = "page",  defaultValue = "0") int page,
+            @Parameter(description = "Page size") @RequestParam(value = "size",  defaultValue = "10") int size,
+            @Parameter(description = "Sort by field") @RequestParam(value = "sortBy", defaultValue = "createdAt") String sortBy,
+            @Parameter(description = "Sort direction") @RequestParam(value = "sortDir", defaultValue = "sortDir") String sortDir) {
         
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
         
         // This would need to be implemented in OrderService
-        // Page<Order> orders = orderService.getAllOrders(pageable);
-        return ResponseEntity.ok(Page.empty());
+        Page<Order> orders = orderService.getAllOrders(pageable);
+        return ResponseEntity.ok(orders);
     }
     
     @GetMapping("/orders/status/{status}")
     @Operation(summary = "Get orders by status")
-    public ResponseEntity<Page<Order>> getOrdersByStatus(
+    public ResponseEntity<Page<OrderDTO>> getOrdersByStatus(
             @PathVariable Order.OrderStatus status,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "desc") String sortDir) {
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size,
+            @RequestParam(value = "sortBy", defaultValue = "createdAt") String sortBy,
+            @RequestParam(value = "page", defaultValue = "desc") String sortDir) {
         
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
         
-        Page<Order> orders = orderService.getOrdersByStatus(status, pageable);
+        Page<OrderDTO> orders = orderService.getOrdersByStatus(status, pageable);
         return ResponseEntity.ok(orders);
     }
     

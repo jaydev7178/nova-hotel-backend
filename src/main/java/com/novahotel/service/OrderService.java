@@ -1,17 +1,24 @@
 package com.novahotel.service;
 
-import com.novahotel.entity.*;
-import com.novahotel.repository.OrderRepository;
-import com.novahotel.repository.OrderItemRepository;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
+import com.novahotel.dto.CheckoutRequest;
+import com.novahotel.dto.CheckoutRequest.ShippingAddressDto;
+import com.novahotel.dto.OrderDTO;
+import com.novahotel.entity.Order;
+import com.novahotel.entity.OrderItem;
+import com.novahotel.entity.Product;
+import com.novahotel.entity.User;
+import com.novahotel.repository.OrderItemRepository;
+import com.novahotel.repository.OrderRepository;
 
 @Service
 @Transactional
@@ -28,32 +35,77 @@ public class OrderService {
     
     @Autowired
     private UserService userService;
-    
+
     @Autowired
     private EmailService emailService;
     
-    public Order createOrder(Long userId, Map<Long, Integer> cartItems, String shippingAddress, String notes) {
-        User user = userService.getUserById(userId);
+    @Transactional
+    public Order createOrder(Long userId, List<CheckoutRequest.CartItemDto> cartItems, 
+                        ShippingAddressDto shippingAddress, String notes) {
         
+        // 1. Validate user
+        User user = userService.getUserById(userId);
+        if (user == null) {
+            throw new IllegalArgumentException("User not found with id: " + userId);
+        }
+        
+        // 2. Validate cart is not empty
+        if (cartItems == null || cartItems.isEmpty()) {
+            throw new IllegalArgumentException("Cart is empty");
+        }
+        
+        // 3. Validate shipping address
+        if (shippingAddress == null) {
+            throw new IllegalArgumentException("Shipping address is required");
+        }
+        
+        // 4. Create order
         Order order = new Order();
         order.setUser(user);
-        order.setShippingAddress(shippingAddress);
+        
+        // Format shipping address as string
+        String formattedAddress = String.format("%s, %s, %s", 
+            shippingAddress.getStreet(), 
+            shippingAddress.getCity(), 
+            shippingAddress.getZipCode()
+        );
+        order.setShippingAddress(formattedAddress);
         order.setNotes(notes);
         order.setStatus(Order.OrderStatus.PENDING);
         order.setTermsAccepted(false);
         
+        // 5. Process cart items and calculate total
         BigDecimal totalAmount = BigDecimal.ZERO;
+        List<OrderItem> orderItems = new ArrayList<>();
         
-        for (Map.Entry<Long, Integer> entry : cartItems.entrySet()) {
-            Long productId = entry.getKey();
-            Integer quantity = entry.getValue();
+        for (CheckoutRequest.CartItemDto cartItem : cartItems) {
+            Long productId = cartItem.getProductId();
+            Integer quantity = cartItem.getQuantity();
             
-            Product product = productService.getProductById(productId);
-            
-            if (product.getStockQuantity() < quantity) {
-                throw new RuntimeException("Insufficient stock for product: " + product.getName());
+            // Validate quantity
+            if (quantity == null || quantity <= 0) {
+                throw new IllegalArgumentException("Invalid quantity for product id: " + productId);
             }
             
+            // Get and validate product
+            Product product = productService.getProductById(productId);
+            if (product == null) {
+                throw new IllegalArgumentException("Product not found with id: " + productId);
+            }
+            
+            if (!product.getIsActive()) {
+                throw new IllegalArgumentException("Product is not available: " + product.getName());
+            }
+            
+            // Check stock availability
+            if (product.getStockQuantity() < quantity) {
+                throw new IllegalArgumentException(
+                    String.format("Insufficient stock for product: %s. Available: %d, Requested: %d",
+                        product.getName(), product.getStockQuantity(), quantity)
+                );
+            }
+            
+            // Create order item
             OrderItem orderItem = new OrderItem();
             orderItem.setOrder(order);
             orderItem.setProduct(product);
@@ -61,35 +113,22 @@ public class OrderService {
             orderItem.setUnitPrice(product.getPrice());
             orderItem.setTotalPrice(product.getPrice().multiply(BigDecimal.valueOf(quantity)));
             
+            orderItems.add(orderItem);
             totalAmount = totalAmount.add(orderItem.getTotalPrice());
+            
+            // Reduce stock quantity
+            product.setStockQuantity(product.getStockQuantity() - quantity);
+            productService.updateProduct(product.getId(), product);
         }
         
+        // 6. Set order items and total amount
+        order.setOrderItems(orderItems);
         order.setTotalAmount(totalAmount);
-        Order savedOrder = orderRepository.save(order);
         
-        // Save order items
-        for (Map.Entry<Long, Integer> entry : cartItems.entrySet()) {
-            Long productId = entry.getKey();
-            Integer quantity = entry.getValue();
-            
-            Product product = productService.getProductById(productId);
-            
-            OrderItem orderItem = new OrderItem();
-            orderItem.setOrder(savedOrder);
-            orderItem.setProduct(product);
-            orderItem.setQuantity(quantity);
-            orderItem.setUnitPrice(product.getPrice());
-            orderItem.setTotalPrice(product.getPrice().multiply(BigDecimal.valueOf(quantity)));
-            
-            orderItemRepository.save(orderItem);
-        }
-        
-        // Send confirmation emails
-        emailService.sendOrderConfirmationEmail(savedOrder);
-        emailService.sendOrderNotificationToOwner(savedOrder);
-        
-        return savedOrder;
+        // 7. Save order (cascade should save order items too)
+        return orderRepository.save(order);
     }
+
     
     public Order updateOrderStatus(Long orderId, Order.OrderStatus status) {
         Order order = orderRepository.findById(orderId)
@@ -190,12 +229,14 @@ public class OrderService {
         return orderRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
     }
     
-    public Page<Order> getOrdersByStatus(Order.OrderStatus status, Pageable pageable) {
-        return orderRepository.findByStatusOrderByCreatedAtDesc(status, pageable);
+    public Page<OrderDTO> getOrdersByStatus(Order.OrderStatus status, Pageable pageable) {
+        //return orderRepository.findByStatusOrderByCreatedAtDesc(status, pageable);
+        Page<Order> orders = orderRepository.findByStatusOrderByCreatedAtDesc(status, pageable);
+        return orders.map(this::convertToDTO);
     }
     
     public Page<Order> getUserOrdersByStatus(Long userId, Order.OrderStatus status, Pageable pageable) {
-        return orderRepository.findByUserIdAndStatusOrderByCreatedAtDesc(userId, status, pageable);
+        return orderRepository.findByUserIdAndStatusOrderByCreatedAtDesc(userId, status, pageable);  
     }
     
     public List<Order> getOrdersByStatuses(List<Order.OrderStatus> statuses) {
@@ -205,5 +246,26 @@ public class OrderService {
     public Long getOrderCountByStatus(Order.OrderStatus status) {
         return orderRepository.countByStatus(status);
     }
+
+    public Page<Order> getAllOrders(Pageable pageable) {
+        return orderRepository.findAllOrders(pageable);
+    }
+
+    private OrderDTO convertToDTO(Order order) {
+    OrderDTO dto = new OrderDTO();
+    dto.setId(order.getId());
+    dto.setOrderNumber(order.getOrderNumber());
+    dto.setUserId(order.getUser().getId());
+    dto.setStatus(order.getStatus());
+    dto.setTotalAmount(order.getTotalAmount());
+    dto.setShippingAddress(order.getShippingAddress());
+    dto.setNotes(order.getNotes());
+    dto.setPaymentInfo(order.getPaymentInfo());
+    dto.setTermsAccepted(order.getTermsAccepted());
+    dto.setCreatedAt(order.getCreatedAt());
+    dto.setUpdatedAt(order.getUpdatedAt());
+    return dto;
+}
+
 }
 

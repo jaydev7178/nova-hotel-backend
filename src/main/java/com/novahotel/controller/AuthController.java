@@ -7,6 +7,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -37,6 +38,9 @@ public class AuthController {
     
     @Autowired
     private JwtUtil jwtUtil;
+    
+    @Autowired
+    private PasswordEncoder passwordEncoder;
     
     @PostMapping("/register")
     @Operation(summary = "Register a new user")
@@ -71,6 +75,7 @@ public class AuthController {
     @PostMapping("/login")
     @Operation(summary = "Login user")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
+            System.out.println(passwordEncoder.encode(request.getPassword()).toString());
         try {
             Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsernameOrEmail(), request.getPassword())

@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: ${DATABASE_URL:jdbc:mysql://localhost:3306/nova_hotel_prod?useSSL=true&serverTimezone=UTC}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: ${DATABASE_URL:jdbc:sqlserver://localhost:1433;databaseName=${DB_NAME:nova_hotel_prod};encrypt=true;trustServerCertificate=false}
+    username: ${DB_USERNAME:sa}
+    password: ${DB_PASSWORD:admin@123}
   
   jpa:
     hibernate:
@@ -10,10 +10,10 @@ spring:
     show-sql: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQL8Dialect
+    dialect: org.hibernate.dialect.SQLServer2012Dialect
 
 # Production specific settings
-logging:
+  logging:
   level:
     com.novahotel: INFO
     org.springframework.security: WARN
@@ -24,17 +24,17 @@ logging:
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
 # CORS for production
-app:
+  app:
   cors:
     allowed-origins: ${CORS_ORIGINS:https://novahotelsupplies.com,https://www.novahotelsupplies.com}
 
 # Security
-jwt:
+  jwt:
   secret: ${JWT_SECRET}
   expiration: ${JWT_EXPIRATION:86400}
 
 # Email configuration
-spring:
+  spring:
   mail:
     host: ${MAIL_HOST}
     port: ${MAIL_PORT}
