@@ -1,0 +1,12 @@
+
+services:
+  - type: web
+    name: nova-hotel-backend
+    env: java
+    buildCommand: ./gradlew build -x nova-hotel-backend
+    startCommand: java -jar build/libs/*.jar
+    envVars:
+      - key: JAVA_VERSION
+        value: 21
+      - key: GRADLE_OPTS
+        value: "-Xmx512m"
