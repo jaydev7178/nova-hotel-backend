@@ -152,7 +152,7 @@ public class AdminController {
     // Order Management
     @GetMapping("/orders")
     @Operation(summary = "Get all orders with pagination")
-    public ResponseEntity<Page<Order>> getAllOrders(
+    public ResponseEntity<Page<OrderDTO>> getAllOrders(
             @Parameter(description = "Page number (0-based)") @RequestParam(value = "page",  defaultValue = "0") int page,
             @Parameter(description = "Page size") @RequestParam(value = "size",  defaultValue = "10") int size,
             @Parameter(description = "Sort by field") @RequestParam(value = "sortBy", defaultValue = "createdAt") String sortBy,
@@ -162,7 +162,7 @@ public class AdminController {
         Pageable pageable = PageRequest.of(page, size, sort);
         
         // This would need to be implemented in OrderService
-        Page<Order> orders = orderService.getAllOrders(pageable);
+        Page<OrderDTO> orders = orderService.getAllOrders(pageable);
         return ResponseEntity.ok(orders);
     }
     

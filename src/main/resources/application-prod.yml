@@ -1,7 +1,7 @@
 spring:
   datasource:
-    url: ${DATABASE_URL:jdbc:sqlserver://localhost:1433;databaseName=${DB_NAME:nova_hotel_prod};encrypt=true;trustServerCertificate=false}
-    username: ${DB_USERNAME:sa}
+    url: ${DATABASE_URL:jdbc:sqlserver://sql.bsite.net\\MSSQL2016;databaseName=${DB_NAME:jaydev_nova_hotel_db};encrypt=true;trustServerCertificate=false}
+    username: ${DB_USERNAME:jaydev_nova_hotel_db}
     password: ${DB_PASSWORD:admin@123}
   
   jpa:

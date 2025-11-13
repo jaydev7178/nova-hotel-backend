@@ -247,8 +247,9 @@ public class OrderService {
         return orderRepository.countByStatus(status);
     }
 
-    public Page<Order> getAllOrders(Pageable pageable) {
-        return orderRepository.findAllOrders(pageable);
+    public Page<OrderDTO> getAllOrders(Pageable pageable) {
+       Page<Order> orders = orderRepository.findAllOrders(pageable);
+        return orders.map(this::convertToDTO);
     }
 
     private OrderDTO convertToDTO(Order order) {
