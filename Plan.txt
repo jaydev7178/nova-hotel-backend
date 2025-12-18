@@ -378,3 +378,8 @@ Create a Postman collection (JSON) that covers auth/products/orders for quick ma
 Run a quick automated smoke test here (I can execute curl/Invoke-RestMethod against localhost if you start the backend) — if so, please start the backend and tell me the runtime port, or I can re-run the commands for you.
 Provide a week-by-week gantt-style text schedule with precise day-by-day tasks (more granular timeline).
 Pick an option and I’ll proceed and implement the artifacts.
+
+
+Will be using this upload and store the images
+now i have logged in https://imagekit.io/dashboard/media-library, now how can i implement this !
+

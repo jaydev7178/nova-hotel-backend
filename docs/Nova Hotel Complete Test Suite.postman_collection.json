@@ -1,0 +1,2988 @@
+{
+	"info": {
+		"_postman_id": "9c2a8dc5-58c1-4a43-9ce7-0539e06f26d5",
+		"name": "Nova Hotel Complete Test Suite",
+		"description": "Comprehensive API test suite covering all endpoints with test cases",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "14326803",
+		"_collection_link": "https://restless-capsule-270401.postman.co/workspace/Personal-Workspace~cfffbacc-51d4-4691-9638-23c8d150ced4/collection/14326803-9c2a8dc5-58c1-4a43-9ce7-0539e06f26d5?action=share&source=collection_link&creator=14326803"
+	},
+	"item": [
+		{
+			"name": "1. Authentication",
+			"item": [
+				{
+					"name": "Register User",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.environment.set('retryCount', 0);",
+									"pm.environment.set('userEmail', pm.variables.replaceIn('{{$randomEmail}}'));",
+									"pm.environment.set('username', pm.variables.replaceIn('user_{{$randomUserName}}'));",
+									"console.log('Starting registration with:', {",
+									"    email: pm.environment.get('userEmail'),",
+									"    username: pm.environment.get('username')",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('TC-REG-01: Registration Response Structure', () => {",
+									"    const response = pm.response.json();",
+									"",
+									"    pm.expect(response).to.have.property('success');",
+									"    pm.expect(response).to.have.property('message');",
+									"    pm.expect(response).to.have.property('data');",
+									"",
+									"    if (response.data) {",
+									"        pm.expect(response.data).to.have.property('token');",
+									"        pm.expect(response.data).to.have.property('user');",
+									"        pm.expect(response.data.user).to.have.property('id');",
+									"    }",
+									"});",
+									"",
+									"pm.test('TC-REG-02: Registration Success', () => {",
+									"    const maxRetries = 2;",
+									"    const response = pm.response.json();",
+									"",
+									"    if (pm.response.code === 201 && response.success) {",
+									"        pm.environment.set('userId', response.data.user.id);",
+									"        pm.environment.set('userToken', response.data.token);",
+									"        console.log('Registration successful. User ID:', response.data.user.id);",
+									"    } else {",
+									"        const retryCount = parseInt(pm.environment.get('retryCount')) || 0;",
+									"        if (retryCount < maxRetries) {",
+									"            pm.environment.set('retryCount', retryCount + 1);",
+									"            pm.environment.set('userEmail', pm.variables.replaceIn('{{$randomEmail}}'));",
+									"            pm.environment.set('username', pm.variables.replaceIn('user_{{$randomUserName}}'));",
+									"            console.log(`Registration failed. Retrying with new credentials`);",
+									"            postman.setNextRequest('Register User');",
+									"        } else {",
+									"            throw new Error('Registration failed after maximum retries');",
+									"        }",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{username}}\",\n    \"email\": \"{{userEmail}}\",\n    \"password\": \"{{userPassword}}\",\n    \"fullName\":\"Test User\",\n    \"firstName\": \"Test\",\n    \"lastName\": \"User\",\n    \"phoneNumber\": \"1234567890\",\n    \"address\": \"123 Test St, Test City\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login User",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.environment.set('retryCount', 0);",
+									"console.log('Attempting login with username:', pm.environment.get('username'));"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('TC-LOG-01: Login Response Structure', () => {",
+									"    const response = pm.response.json();",
+									"    ",
+									"    pm.expect(response).to.have.property('success');",
+									"    pm.expect(response).to.have.property('message');",
+									"    pm.expect(response).to.have.property('data');",
+									"    ",
+									"    if (response.data) {",
+									"        pm.expect(response.data).to.have.property('token');",
+									"        pm.expect(response.data).to.have.property('user');",
+									"    }",
+									"});",
+									"",
+									"pm.test('TC-LOG-02: Login Success', () => {",
+									"    const response = pm.response.json();",
+									"",
+									"    if (pm.response.code === 200 && response.success) {",
+									"        pm.environment.set('userToken', response.data.token);",
+									"        console.log('Login successful. Token received.');",
+									"    } else {",
+									"        const retryCount = parseInt(pm.environment.get('retryCount')) || 0;",
+									"        if (retryCount < 2) {",
+									"            pm.environment.set('retryCount', retryCount + 1);",
+									"            console.log('Login failed. Retrying registration...');",
+									"            postman.setNextRequest('Register User');",
+									"        } else {",
+									"            throw new Error('Login failed after retries');",
+									"        }",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"usernameOrEmail\": \"{{username}}\",\n    \"password\": \"{{userPassword}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Login User",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"usernameOrEmail\": \"{{username}}\",\n    \"password\": \"{{userPassword}}\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/auth/login",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"auth",
+										"login"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Date",
+									"value": "Fri, 28 Nov 2025 01:23:49 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "CF-RAY",
+									"value": "9a560fdf1d959c2f-SIN"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Content-Encoding",
+									"value": "br"
+								},
+								{
+									"key": "expires",
+									"value": "0"
+								},
+								{
+									"key": "pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "rndr-id",
+									"value": "af9f754c-7aac-4c01"
+								},
+								{
+									"key": "strict-transport-security",
+									"value": "max-age=31536000 ; includeSubDomains"
+								},
+								{
+									"key": "vary",
+									"value": "Origin"
+								},
+								{
+									"key": "vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "vary",
+									"value": "Accept-Encoding"
+								},
+								{
+									"key": "x-content-type-options",
+									"value": "nosniff"
+								},
+								{
+									"key": "x-frame-options",
+									"value": "DENY"
+								},
+								{
+									"key": "x-render-origin-server",
+									"value": "Render"
+								},
+								{
+									"key": "x-xss-protection",
+									"value": "0"
+								},
+								{
+									"key": "cf-cache-status",
+									"value": "DYNAMIC"
+								},
+								{
+									"key": "Server",
+									"value": "cloudflare"
+								},
+								{
+									"key": "alt-svc",
+									"value": "h3=\":443\"; ma=86400"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"success\": true,\n    \"message\": \"Login successful\",\n    \"data\": {\n        \"token\": \"eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiVVNFUiIsInN1YiI6ImpheWRldkBnbWFpbC5jb20iLCJpYXQiOjE3NjQyOTMwMjksImV4cCI6MTc2NDM3OTQyOX0.6aITHR70iiy-xjjwqLwxOAorVtb44upXsYORTIAYCEo\",\n        \"user\": {\n            \"id\": 4,\n            \"username\": \"jaydev@gmail.com\",\n            \"email\": \"jaydev@gmail.com\",\n            \"password\": \"$2a$10$Tr12cUgfGpPC4i1RNhxB2up6BVDn/SlNgXi4Zl4gk2z4AnIX9gBIe\",\n            \"fullName\": \"Jaydev Sahu\",\n            \"phoneNumber\": \"1234567890\",\n            \"address\": \"123 Test St, Test City\",\n            \"role\": \"USER\",\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T03:30:51.5114362\",\n            \"updatedAt\": \"2025-10-31T03:30:51.5114362\",\n            \"firstName\": \"Jaydev\",\n            \"lastName\": \"Sahu\",\n            \"credentialsNonExpired\": true,\n            \"accountNonExpired\": true,\n            \"accountNonLocked\": true,\n            \"authorities\": [\n                {\n                    \"authority\": \"ROLE_USER\"\n                }\n            ],\n            \"enabled\": true\n        },\n        \"message\": \"Login successful\"\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Login Admin",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.environment.set('retryCount', 0);",
+									"console.log('Attempting login with username:', pm.environment.get('username'));"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('TC-LOG-01: Login Response Structure', () => {",
+									"    const response = pm.response.json();",
+									"    ",
+									"    pm.expect(response).to.have.property('success');",
+									"    pm.expect(response).to.have.property('message');",
+									"    pm.expect(response).to.have.property('data');",
+									"    ",
+									"    if (response.data) {",
+									"        pm.expect(response.data).to.have.property('token');",
+									"        pm.expect(response.data).to.have.property('user');",
+									"    }",
+									"});",
+									"",
+									"pm.test('TC-LOG-02: Login Success', () => {",
+									"    const response = pm.response.json();",
+									"",
+									"    if (pm.response.code === 200 && response.success) {",
+									"        pm.environment.set('userToken', response.data.token);",
+									"        console.log('Login successful. Token received.');",
+									"    } else {",
+									"        const retryCount = parseInt(pm.environment.get('retryCount')) || 0;",
+									"        if (retryCount < 2) {",
+									"            pm.environment.set('retryCount', retryCount + 1);",
+									"            console.log('Login failed. Retrying registration...');",
+									"            postman.setNextRequest('Register User');",
+									"        } else {",
+									"            throw new Error('Login failed after retries');",
+									"        }",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"usernameOrEmail\": \"{{adminEmail}}\",\n    \"password\": \"{{adminPassword}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Login Admin",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"usernameOrEmail\": \"{{adminEmail}}\",\n    \"password\": \"{{adminPassword}}\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/auth/login",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"auth",
+										"login"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Date",
+									"value": "Fri, 28 Nov 2025 01:24:00 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "CF-RAY",
+									"value": "9a561028f8b59c2f-SIN"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Content-Encoding",
+									"value": "br"
+								},
+								{
+									"key": "expires",
+									"value": "0"
+								},
+								{
+									"key": "pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "rndr-id",
+									"value": "2121c9bc-7294-409e"
+								},
+								{
+									"key": "strict-transport-security",
+									"value": "max-age=31536000 ; includeSubDomains"
+								},
+								{
+									"key": "vary",
+									"value": "Origin"
+								},
+								{
+									"key": "vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "vary",
+									"value": "Accept-Encoding"
+								},
+								{
+									"key": "x-content-type-options",
+									"value": "nosniff"
+								},
+								{
+									"key": "x-frame-options",
+									"value": "DENY"
+								},
+								{
+									"key": "x-render-origin-server",
+									"value": "Render"
+								},
+								{
+									"key": "x-xss-protection",
+									"value": "0"
+								},
+								{
+									"key": "cf-cache-status",
+									"value": "DYNAMIC"
+								},
+								{
+									"key": "Server",
+									"value": "cloudflare"
+								},
+								{
+									"key": "alt-svc",
+									"value": "h3=\":443\"; ma=86400"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"success\": true,\n    \"message\": \"Login successful\",\n    \"data\": {\n        \"token\": \"eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiQURNSU4iLCJzdWIiOiJhZG1pbiIsImlhdCI6MTc2NDI5MzA0MCwiZXhwIjoxNzY0Mzc5NDQwfQ.IaIEYTyjzy68A5DBfw0pr5nOKXjufWiuFXLbJvH5_do\",\n        \"user\": {\n            \"id\": 1,\n            \"username\": \"admin\",\n            \"email\": \"admin@novahotelsupplies.com\",\n            \"password\": \"$2a$10$kT6nNhXGSNUd6iomXW/HdeQcQbRbJYQIq.A2IagvE8.Ul3.ONx.fu\",\n            \"fullName\": \"System Administrator\",\n            \"phoneNumber\": null,\n            \"address\": null,\n            \"role\": \"ADMIN\",\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T02:56:45.54\",\n            \"updatedAt\": \"2025-10-31T02:56:45.54\",\n            \"firstName\": null,\n            \"lastName\": null,\n            \"credentialsNonExpired\": true,\n            \"accountNonExpired\": true,\n            \"accountNonLocked\": true,\n            \"authorities\": [\n                {\n                    \"authority\": \"ROLE_ADMIN\"\n                }\n            ],\n            \"enabled\": true\n        },\n        \"message\": \"Login successful\"\n    }\n}"
+						}
+					]
+				}
+			],
+			"description": "Authentication and user management endpoints"
+		},
+		{
+			"name": "2. Products",
+			"item": [
+				{
+					"name": "Get Products By Category",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('TC-PROD-03: Category Products Response', () => {",
+									"    const response = pm.response.json();",
+									"",
+									"    pm.expect(response).to.have.property('content');",
+									"    pm.expect(response).to.have.property('totalElements');",
+									"",
+									"    if (response.content && response.content.length > 0) {",
+									"        pm.expect(response.content[0]).to.have.property('categoryId');",
+									"        pm.expect(response.content[0].categoryId).to.equal(pm.environment.get('categoryId'));",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/products/category/{{categoryId}}?page=0&size=10&sortBy=name&sortDir=asc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"products",
+								"category",
+								"{{categoryId}}"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								},
+								{
+									"key": "sortBy",
+									"value": "name"
+								},
+								{
+									"key": "sortDir",
+									"value": "asc"
+								}
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Get Products By Category",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{userToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/products/category/{{categoryId}}?page=0&size=10&sortBy=name&sortDir=desc",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"products",
+										"category",
+										"{{categoryId}}"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "0"
+										},
+										{
+											"key": "size",
+											"value": "10"
+										},
+										{
+											"key": "sortBy",
+											"value": "name"
+										},
+										{
+											"key": "sortDir",
+											"value": "desc"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Date",
+									"value": "Fri, 28 Nov 2025 01:25:26 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "CF-RAY",
+									"value": "9a56124199579c2f-SIN"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Content-Encoding",
+									"value": "br"
+								},
+								{
+									"key": "expires",
+									"value": "0"
+								},
+								{
+									"key": "pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "rndr-id",
+									"value": "ac56a820-b0f6-4220"
+								},
+								{
+									"key": "strict-transport-security",
+									"value": "max-age=31536000 ; includeSubDomains"
+								},
+								{
+									"key": "vary",
+									"value": "Origin"
+								},
+								{
+									"key": "vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "vary",
+									"value": "Accept-Encoding"
+								},
+								{
+									"key": "x-content-type-options",
+									"value": "nosniff"
+								},
+								{
+									"key": "x-frame-options",
+									"value": "DENY"
+								},
+								{
+									"key": "x-render-origin-server",
+									"value": "Render"
+								},
+								{
+									"key": "x-xss-protection",
+									"value": "0"
+								},
+								{
+									"key": "cf-cache-status",
+									"value": "DYNAMIC"
+								},
+								{
+									"key": "Server",
+									"value": "cloudflare"
+								},
+								{
+									"key": "alt-svc",
+									"value": "h3=\":443\"; ma=86400"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"content\": [\n        {\n            \"id\": 3,\n            \"name\": \"Stainless Steel Mixing Bowls\",\n            \"description\": \"Set of 5 mixing bowls in various sizes\",\n            \"price\": 45.99,\n            \"stockQuantity\": 100,\n            \"sku\": \"KIT-003\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-10-31T04:21:05.31\",\n            \"orderItems\": []\n        },\n        {\n            \"id\": 1,\n            \"name\": \"Professional Chef Knife Set\",\n            \"description\": \"High-quality stainless steel knife set for professional kitchens\",\n            \"price\": 89.99,\n            \"stockQuantity\": 50,\n            \"sku\": \"KIT-001\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-10-31T04:21:05.31\",\n            \"orderItems\": []\n        },\n        {\n            \"id\": 2,\n            \"name\": \"Commercial Coffee Maker\",\n            \"description\": \"Large capacity coffee maker for hotel breakfast service\",\n            \"price\": 299.99,\n            \"stockQuantity\": 23,\n            \"sku\": \"KIT-002\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-11-11T07:14:39.0876558\",\n            \"orderItems\": [\n                {\n                    \"id\": 1,\n                    \"quantity\": 1,\n                    \"unitPrice\": 299.99,\n                    \"totalPrice\": 299.99,\n                    \"createdAt\": \"2025-11-11T07:07:11.4611382\",\n                    \"updatedAt\": \"2025-11-11T07:07:11.4611382\"\n                },\n                {\n                    \"id\": 2,\n                    \"quantity\": 1,\n                    \"unitPrice\": 299.99,\n                    \"totalPrice\": 299.99,\n                    \"createdAt\": \"2025-11-11T07:14:38.9121634\",\n                    \"updatedAt\": \"2025-11-11T07:14:38.9121634\"\n                }\n            ]\n        },\n        {\n            \"id\": 4,\n            \"name\": \"Commercial Blender\",\n            \"description\": \"Heavy-duty blender for smoothies and food preparation\",\n            \"price\": 199.99,\n            \"stockQuantity\": 30,\n            \"sku\": \"KIT-004\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-10-31T04:21:05.31\",\n            \"orderItems\": []\n        }\n    ],\n    \"pageable\": {\n        \"pageNumber\": 0,\n        \"pageSize\": 10,\n        \"sort\": {\n            \"unsorted\": false,\n            \"sorted\": true,\n            \"empty\": false\n        },\n        \"offset\": 0,\n        \"unpaged\": false,\n        \"paged\": true\n    },\n    \"totalPages\": 1,\n    \"totalElements\": 4,\n    \"last\": true,\n    \"numberOfElements\": 4,\n    \"size\": 10,\n    \"number\": 0,\n    \"sort\": {\n        \"unsorted\": false,\n        \"sorted\": true,\n        \"empty\": false\n    },\n    \"first\": true,\n    \"empty\": false\n}"
+						}
+					]
+				},
+				{
+					"name": "Get All Products",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('TC-PROD-01: Get Products Response Structure', () => {",
+									"    const response = pm.response.json();",
+									"",
+									"    pm.expect(response).to.have.property('content');",
+									"    pm.expect(response).to.have.property('totalElements');",
+									"    pm.expect(response).to.have.property('totalPages');",
+									"",
+									"    if (response.content && response.content.length > 0) {",
+									"        pm.environment.set('productId', response.content[0].id);",
+									"        console.log('Product selected:', response.content[0].id);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/products?page=0&size=10&sortBy=name&sortDir=asc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"products"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								},
+								{
+									"key": "sortBy",
+									"value": "name"
+								},
+								{
+									"key": "sortDir",
+									"value": "asc"
+								}
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Get All Products",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{userToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/products?page=0&size=10&sortBy=name&sortDir=asc",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"products"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "0"
+										},
+										{
+											"key": "size",
+											"value": "10"
+										},
+										{
+											"key": "sortBy",
+											"value": "name"
+										},
+										{
+											"key": "sortDir",
+											"value": "asc"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Date",
+									"value": "Fri, 28 Nov 2025 01:24:12 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "CF-RAY",
+									"value": "9a5610645ee09c2f-SIN"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Content-Encoding",
+									"value": "br"
+								},
+								{
+									"key": "expires",
+									"value": "0"
+								},
+								{
+									"key": "pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "rndr-id",
+									"value": "a0062dd9-bf18-40ff"
+								},
+								{
+									"key": "strict-transport-security",
+									"value": "max-age=31536000 ; includeSubDomains"
+								},
+								{
+									"key": "vary",
+									"value": "Origin"
+								},
+								{
+									"key": "vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "vary",
+									"value": "Accept-Encoding"
+								},
+								{
+									"key": "x-content-type-options",
+									"value": "nosniff"
+								},
+								{
+									"key": "x-frame-options",
+									"value": "DENY"
+								},
+								{
+									"key": "x-render-origin-server",
+									"value": "Render"
+								},
+								{
+									"key": "x-xss-protection",
+									"value": "0"
+								},
+								{
+									"key": "cf-cache-status",
+									"value": "DYNAMIC"
+								},
+								{
+									"key": "Server",
+									"value": "cloudflare"
+								},
+								{
+									"key": "alt-svc",
+									"value": "h3=\":443\"; ma=86400"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"content\": [\n        {\n            \"id\": 10,\n            \"name\": \"Bath Towel Set\",\n            \"description\": \"Set of 4 premium bath towels\",\n            \"price\": 39.99,\n            \"stockQuantity\": 79,\n            \"sku\": \"BED-002\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-11-13T03:58:24.3523115\",\n            \"orderItems\": [\n                {\n                    \"id\": 3,\n                    \"quantity\": 1,\n                    \"unitPrice\": 39.99,\n                    \"totalPrice\": 39.99,\n                    \"createdAt\": \"2025-11-13T03:58:24.1540452\",\n                    \"updatedAt\": \"2025-11-13T03:58:24.1540582\"\n                }\n            ]\n        },\n        {\n            \"id\": 15,\n            \"name\": \"Bathroom Mirrors\",\n            \"description\": \"Framed bathroom mirrors, various sizes\",\n            \"price\": 89.99,\n            \"stockQuantity\": 40,\n            \"sku\": \"BAT-003\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-10-31T04:21:05.31\",\n            \"orderItems\": []\n        },\n        {\n            \"id\": 4,\n            \"name\": \"Commercial Blender\",\n            \"description\": \"Heavy-duty blender for smoothies and food preparation\",\n            \"price\": 199.99,\n            \"stockQuantity\": 30,\n            \"sku\": \"KIT-004\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-10-31T04:21:05.31\",\n            \"orderItems\": []\n        },\n        {\n            \"id\": 2,\n            \"name\": \"Commercial Coffee Maker\",\n            \"description\": \"Large capacity coffee maker for hotel breakfast service\",\n            \"price\": 299.99,\n            \"stockQuantity\": 23,\n            \"sku\": \"KIT-002\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-11-11T07:14:39.0876558\",\n            \"orderItems\": [\n                {\n                    \"id\": 1,\n                    \"quantity\": 1,\n                    \"unitPrice\": 299.99,\n                    \"totalPrice\": 299.99,\n                    \"createdAt\": \"2025-11-11T07:07:11.4611382\",\n                    \"updatedAt\": \"2025-11-11T07:07:11.4611382\"\n                },\n                {\n                    \"id\": 2,\n                    \"quantity\": 1,\n                    \"unitPrice\": 299.99,\n                    \"totalPrice\": 299.99,\n                    \"createdAt\": \"2025-11-11T07:14:38.9121634\",\n                    \"updatedAt\": \"2025-11-11T07:14:38.9121634\"\n                }\n            ]\n        },\n        {\n            \"id\": 7,\n            \"name\": \"Commercial Vacuum Cleaner\",\n            \"description\": \"Heavy-duty vacuum for hotel housekeeping\",\n            \"price\": 399.99,\n            \"stockQuantity\": 15,\n            \"sku\": \"CLE-003\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-10-31T04:21:05.31\",\n            \"orderItems\": []\n        },\n        {\n            \"id\": 17,\n            \"name\": \"Desk Organizer Set\",\n            \"description\": \"Professional desk organizer with compartments\",\n            \"price\": 25.99,\n            \"stockQuantity\": 100,\n            \"sku\": \"OFF-001\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-10-31T04:21:05.31\",\n            \"orderItems\": []\n        },\n        {\n            \"id\": 8,\n            \"name\": \"Disinfectant Spray\",\n            \"description\": \"Hospital-grade disinfectant spray\",\n            \"price\": 8.99,\n            \"stockQuantity\": 300,\n            \"sku\": \"CLE-004\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-10-31T04:21:05.31\",\n            \"orderItems\": []\n        },\n        {\n            \"id\": 12,\n            \"name\": \"Duvet Cover Set\",\n            \"description\": \"Luxury duvet cover with matching pillow cases\",\n            \"price\": 79.99,\n            \"stockQuantity\": 60,\n            \"sku\": \"BED-004\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-10-31T04:21:05.31\",\n            \"orderItems\": []\n        },\n        {\n            \"id\": 19,\n            \"name\": \"Filing Cabinet\",\n            \"description\": \"2-drawer filing cabinet\",\n            \"price\": 89.99,\n            \"stockQuantity\": 30,\n            \"sku\": \"OFF-003\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-10-31T04:21:05.31\",\n            \"orderItems\": []\n        },\n        {\n            \"id\": 22,\n            \"name\": \"Ladder Set\",\n            \"description\": \"Multi-purpose aluminum ladders\",\n            \"price\": 129.99,\n            \"stockQuantity\": 20,\n            \"sku\": \"MAI-002\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-10-31T04:21:05.31\",\n            \"orderItems\": []\n        }\n    ],\n    \"pageable\": {\n        \"pageNumber\": 0,\n        \"pageSize\": 10,\n        \"sort\": {\n            \"unsorted\": false,\n            \"sorted\": true,\n            \"empty\": false\n        },\n        \"offset\": 0,\n        \"unpaged\": false,\n        \"paged\": true\n    },\n    \"totalPages\": 3,\n    \"totalElements\": 24,\n    \"last\": false,\n    \"numberOfElements\": 10,\n    \"size\": 10,\n    \"number\": 0,\n    \"sort\": {\n        \"unsorted\": false,\n        \"sorted\": true,\n        \"empty\": false\n    },\n    \"first\": true,\n    \"empty\": false\n}"
+						}
+					]
+				},
+				{
+					"name": "Search Products",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('TC-PROD-04: Search Products Response', () => {",
+									"    const response = pm.response.json();",
+									"",
+									"    pm.expect(response).to.have.property('content');",
+									"    pm.expect(response).to.have.property('totalElements');",
+									"",
+									"    if (response.content && response.content.length > 0) {",
+									"        const searchTerm = pm.request.url.query.get('name').toLowerCase();",
+									"        const firstProduct = response.content[0].name.toLowerCase();",
+									"        pm.expect(firstProduct).to.include(searchTerm);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/products/search?name=test&page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"products",
+								"search"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "test"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Search Products",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{userToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/products/search?name=test&page=0&size=10",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"products",
+										"search"
+									],
+									"query": [
+										{
+											"key": "name",
+											"value": "test"
+										},
+										{
+											"key": "page",
+											"value": "0"
+										},
+										{
+											"key": "size",
+											"value": "10"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Date",
+									"value": "Fri, 28 Nov 2025 01:25:40 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "CF-RAY",
+									"value": "9a56129c7ae79c2f-SIN"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Content-Encoding",
+									"value": "br"
+								},
+								{
+									"key": "expires",
+									"value": "0"
+								},
+								{
+									"key": "pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "rndr-id",
+									"value": "8a91ad3c-cb66-4832"
+								},
+								{
+									"key": "strict-transport-security",
+									"value": "max-age=31536000 ; includeSubDomains"
+								},
+								{
+									"key": "vary",
+									"value": "Origin"
+								},
+								{
+									"key": "vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "vary",
+									"value": "Accept-Encoding"
+								},
+								{
+									"key": "x-content-type-options",
+									"value": "nosniff"
+								},
+								{
+									"key": "x-frame-options",
+									"value": "DENY"
+								},
+								{
+									"key": "x-render-origin-server",
+									"value": "Render"
+								},
+								{
+									"key": "x-xss-protection",
+									"value": "0"
+								},
+								{
+									"key": "cf-cache-status",
+									"value": "DYNAMIC"
+								},
+								{
+									"key": "Server",
+									"value": "cloudflare"
+								},
+								{
+									"key": "alt-svc",
+									"value": "h3=\":443\"; ma=86400"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"content\": [],\n    \"pageable\": {\n        \"pageNumber\": 0,\n        \"pageSize\": 10,\n        \"sort\": {\n            \"unsorted\": false,\n            \"sorted\": true,\n            \"empty\": false\n        },\n        \"offset\": 0,\n        \"unpaged\": false,\n        \"paged\": true\n    },\n    \"totalPages\": 0,\n    \"totalElements\": 0,\n    \"last\": true,\n    \"numberOfElements\": 0,\n    \"size\": 10,\n    \"number\": 0,\n    \"sort\": {\n        \"unsorted\": false,\n        \"sorted\": true,\n        \"empty\": false\n    },\n    \"first\": true,\n    \"empty\": true\n}"
+						}
+					]
+				},
+				{
+					"name": "Get In-Stock Products",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('TC-PROD-05: In-Stock Products Response', () => {",
+									"    const response = pm.response.json();",
+									"",
+									"    pm.expect(response).to.have.property('content');",
+									"    pm.expect(response).to.have.property('totalElements');",
+									"",
+									"    if (response.content && response.content.length > 0) {",
+									"        response.content.forEach(product => {",
+									"            pm.expect(product.stockQuantity).to.be.greaterThan(0);",
+									"        });",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/products/in-stock?page=0&size=10&sortBy=name&sortDir=asc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"products",
+								"in-stock"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								},
+								{
+									"key": "sortBy",
+									"value": "name"
+								},
+								{
+									"key": "sortDir",
+									"value": "asc"
+								}
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Get In-Stock Products",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{userToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/products/in-stock?page=0&size=10&sortBy=name&sortDir=asc",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"products",
+										"in-stock"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "0"
+										},
+										{
+											"key": "size",
+											"value": "10"
+										},
+										{
+											"key": "sortBy",
+											"value": "name"
+										},
+										{
+											"key": "sortDir",
+											"value": "asc"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Date",
+									"value": "Fri, 28 Nov 2025 01:26:05 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "CF-RAY",
+									"value": "9a56133109359c2f-SIN"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Content-Encoding",
+									"value": "br"
+								},
+								{
+									"key": "expires",
+									"value": "0"
+								},
+								{
+									"key": "pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "rndr-id",
+									"value": "ecd5dd5c-4af0-4db2"
+								},
+								{
+									"key": "strict-transport-security",
+									"value": "max-age=31536000 ; includeSubDomains"
+								},
+								{
+									"key": "vary",
+									"value": "Origin"
+								},
+								{
+									"key": "vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "vary",
+									"value": "Accept-Encoding"
+								},
+								{
+									"key": "x-content-type-options",
+									"value": "nosniff"
+								},
+								{
+									"key": "x-frame-options",
+									"value": "DENY"
+								},
+								{
+									"key": "x-render-origin-server",
+									"value": "Render"
+								},
+								{
+									"key": "x-xss-protection",
+									"value": "0"
+								},
+								{
+									"key": "cf-cache-status",
+									"value": "DYNAMIC"
+								},
+								{
+									"key": "Server",
+									"value": "cloudflare"
+								},
+								{
+									"key": "alt-svc",
+									"value": "h3=\":443\"; ma=86400"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"content\": [\n        {\n            \"id\": 10,\n            \"name\": \"Bath Towel Set\",\n            \"description\": \"Set of 4 premium bath towels\",\n            \"price\": 39.99,\n            \"stockQuantity\": 79,\n            \"sku\": \"BED-002\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-11-13T03:58:24.3523115\",\n            \"orderItems\": [\n                {\n                    \"id\": 3,\n                    \"quantity\": 1,\n                    \"unitPrice\": 39.99,\n                    \"totalPrice\": 39.99,\n                    \"createdAt\": \"2025-11-13T03:58:24.1540452\",\n                    \"updatedAt\": \"2025-11-13T03:58:24.1540582\"\n                }\n            ]\n        },\n        {\n            \"id\": 15,\n            \"name\": \"Bathroom Mirrors\",\n            \"description\": \"Framed bathroom mirrors, various sizes\",\n            \"price\": 89.99,\n            \"stockQuantity\": 40,\n            \"sku\": \"BAT-003\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-10-31T04:21:05.31\",\n            \"orderItems\": []\n        },\n        {\n            \"id\": 4,\n            \"name\": \"Commercial Blender\",\n            \"description\": \"Heavy-duty blender for smoothies and food preparation\",\n            \"price\": 199.99,\n            \"stockQuantity\": 30,\n            \"sku\": \"KIT-004\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-10-31T04:21:05.31\",\n            \"orderItems\": []\n        },\n        {\n            \"id\": 2,\n            \"name\": \"Commercial Coffee Maker\",\n            \"description\": \"Large capacity coffee maker for hotel breakfast service\",\n            \"price\": 299.99,\n            \"stockQuantity\": 23,\n            \"sku\": \"KIT-002\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-11-11T07:14:39.0876558\",\n            \"orderItems\": [\n                {\n                    \"id\": 1,\n                    \"quantity\": 1,\n                    \"unitPrice\": 299.99,\n                    \"totalPrice\": 299.99,\n                    \"createdAt\": \"2025-11-11T07:07:11.4611382\",\n                    \"updatedAt\": \"2025-11-11T07:07:11.4611382\"\n                },\n                {\n                    \"id\": 2,\n                    \"quantity\": 1,\n                    \"unitPrice\": 299.99,\n                    \"totalPrice\": 299.99,\n                    \"createdAt\": \"2025-11-11T07:14:38.9121634\",\n                    \"updatedAt\": \"2025-11-11T07:14:38.9121634\"\n                }\n            ]\n        },\n        {\n            \"id\": 7,\n            \"name\": \"Commercial Vacuum Cleaner\",\n            \"description\": \"Heavy-duty vacuum for hotel housekeeping\",\n            \"price\": 399.99,\n            \"stockQuantity\": 15,\n            \"sku\": \"CLE-003\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-10-31T04:21:05.31\",\n            \"orderItems\": []\n        },\n        {\n            \"id\": 17,\n            \"name\": \"Desk Organizer Set\",\n            \"description\": \"Professional desk organizer with compartments\",\n            \"price\": 25.99,\n            \"stockQuantity\": 100,\n            \"sku\": \"OFF-001\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-10-31T04:21:05.31\",\n            \"orderItems\": []\n        },\n        {\n            \"id\": 8,\n            \"name\": \"Disinfectant Spray\",\n            \"description\": \"Hospital-grade disinfectant spray\",\n            \"price\": 8.99,\n            \"stockQuantity\": 300,\n            \"sku\": \"CLE-004\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-10-31T04:21:05.31\",\n            \"orderItems\": []\n        },\n        {\n            \"id\": 12,\n            \"name\": \"Duvet Cover Set\",\n            \"description\": \"Luxury duvet cover with matching pillow cases\",\n            \"price\": 79.99,\n            \"stockQuantity\": 60,\n            \"sku\": \"BED-004\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-10-31T04:21:05.31\",\n            \"orderItems\": []\n        },\n        {\n            \"id\": 19,\n            \"name\": \"Filing Cabinet\",\n            \"description\": \"2-drawer filing cabinet\",\n            \"price\": 89.99,\n            \"stockQuantity\": 30,\n            \"sku\": \"OFF-003\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-10-31T04:21:05.31\",\n            \"orderItems\": []\n        },\n        {\n            \"id\": 22,\n            \"name\": \"Ladder Set\",\n            \"description\": \"Multi-purpose aluminum ladders\",\n            \"price\": 129.99,\n            \"stockQuantity\": 20,\n            \"sku\": \"MAI-002\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-10-31T04:21:05.31\",\n            \"orderItems\": []\n        }\n    ],\n    \"pageable\": {\n        \"pageNumber\": 0,\n        \"pageSize\": 10,\n        \"sort\": {\n            \"unsorted\": false,\n            \"sorted\": true,\n            \"empty\": false\n        },\n        \"offset\": 0,\n        \"unpaged\": false,\n        \"paged\": true\n    },\n    \"totalPages\": 3,\n    \"totalElements\": 24,\n    \"last\": false,\n    \"numberOfElements\": 10,\n    \"size\": 10,\n    \"number\": 0,\n    \"sort\": {\n        \"unsorted\": false,\n        \"sorted\": true,\n        \"empty\": false\n    },\n    \"first\": true,\n    \"empty\": false\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Products by Price Range",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('TC-PROD-06: Price Range Products Response', () => {",
+									"    const response = pm.response.json();",
+									"    const minPrice = parseFloat(pm.request.url.query.get('minPrice'));",
+									"    const maxPrice = parseFloat(pm.request.url.query.get('maxPrice'));",
+									"",
+									"    pm.expect(response).to.have.property('content');",
+									"",
+									"    if (response.content && response.content.length > 0) {",
+									"        response.content.forEach(product => {",
+									"            pm.expect(product.price).to.be.at.least(minPrice);",
+									"            pm.expect(product.price).to.be.at.most(maxPrice);",
+									"        });",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/products/price-range?minPrice=10&maxPrice=100&page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"products",
+								"price-range"
+							],
+							"query": [
+								{
+									"key": "minPrice",
+									"value": "10"
+								},
+								{
+									"key": "maxPrice",
+									"value": "100"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Get Products by Price Range",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{userToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/products/price-range?minPrice=10&maxPrice=100&page=0&size=10",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"products",
+										"price-range"
+									],
+									"query": [
+										{
+											"key": "minPrice",
+											"value": "10"
+										},
+										{
+											"key": "maxPrice",
+											"value": "100"
+										},
+										{
+											"key": "page",
+											"value": "0"
+										},
+										{
+											"key": "size",
+											"value": "10"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Date",
+									"value": "Fri, 28 Nov 2025 01:26:30 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "CF-RAY",
+									"value": "9a5613cedcf99c2f-SIN"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Content-Encoding",
+									"value": "br"
+								},
+								{
+									"key": "expires",
+									"value": "0"
+								},
+								{
+									"key": "pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "rndr-id",
+									"value": "a4a3f874-7977-43b7"
+								},
+								{
+									"key": "strict-transport-security",
+									"value": "max-age=31536000 ; includeSubDomains"
+								},
+								{
+									"key": "vary",
+									"value": "Origin"
+								},
+								{
+									"key": "vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "vary",
+									"value": "Accept-Encoding"
+								},
+								{
+									"key": "x-content-type-options",
+									"value": "nosniff"
+								},
+								{
+									"key": "x-frame-options",
+									"value": "DENY"
+								},
+								{
+									"key": "x-render-origin-server",
+									"value": "Render"
+								},
+								{
+									"key": "x-xss-protection",
+									"value": "0"
+								},
+								{
+									"key": "cf-cache-status",
+									"value": "DYNAMIC"
+								},
+								{
+									"key": "Server",
+									"value": "cloudflare"
+								},
+								{
+									"key": "alt-svc",
+									"value": "h3=\":443\"; ma=86400"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"content\": [\n        {\n            \"id\": 5,\n            \"name\": \"Multi-Purpose Cleaner\",\n            \"description\": \"Eco-friendly all-purpose cleaner concentrate\",\n            \"price\": 12.99,\n            \"stockQuantity\": 200,\n            \"sku\": \"CLE-001\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-10-31T04:21:05.31\",\n            \"orderItems\": []\n        },\n        {\n            \"id\": 6,\n            \"name\": \"Microfiber Cleaning Cloths\",\n            \"description\": \"Pack of 24 high-quality microfiber cloths\",\n            \"price\": 18.99,\n            \"stockQuantity\": 150,\n            \"sku\": \"CLE-002\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-10-31T04:21:05.31\",\n            \"orderItems\": []\n        },\n        {\n            \"id\": 14,\n            \"name\": \"Soap Dispensers\",\n            \"description\": \"Automatic soap dispensers\",\n            \"price\": 19.99,\n            \"stockQuantity\": 75,\n            \"sku\": \"BAT-002\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-10-31T04:21:05.31\",\n            \"orderItems\": []\n        },\n        {\n            \"id\": 11,\n            \"name\": \"Pillow Cases\",\n            \"description\": \"Pack of 4 white pillow cases\",\n            \"price\": 24.99,\n            \"stockQuantity\": 120,\n            \"sku\": \"BED-003\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-10-31T04:21:05.31\",\n            \"orderItems\": []\n        },\n        {\n            \"id\": 17,\n            \"name\": \"Desk Organizer Set\",\n            \"description\": \"Professional desk organizer with compartments\",\n            \"price\": 25.99,\n            \"stockQuantity\": 100,\n            \"sku\": \"OFF-001\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-10-31T04:21:05.31\",\n            \"orderItems\": []\n        },\n        {\n            \"id\": 24,\n            \"name\": \"Safety Equipment\",\n            \"description\": \"Safety goggles, gloves, and hard hats\",\n            \"price\": 29.99,\n            \"stockQuantity\": 100,\n            \"sku\": \"MAI-004\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-10-31T04:21:05.31\",\n            \"orderItems\": []\n        },\n        {\n            \"id\": 13,\n            \"name\": \"Shampoo Dispensers\",\n            \"description\": \"Wall-mounted shampoo dispensers\",\n            \"price\": 29.99,\n            \"stockQuantity\": 50,\n            \"sku\": \"BAT-001\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-10-31T04:21:05.31\",\n            \"orderItems\": []\n        },\n        {\n            \"id\": 16,\n            \"name\": \"Towel Racks\",\n            \"description\": \"Stainless steel towel racks\",\n            \"price\": 34.99,\n            \"stockQuantity\": 90,\n            \"sku\": \"BAT-004\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-10-31T04:21:05.31\",\n            \"orderItems\": []\n        },\n        {\n            \"id\": 10,\n            \"name\": \"Bath Towel Set\",\n            \"description\": \"Set of 4 premium bath towels\",\n            \"price\": 39.99,\n            \"stockQuantity\": 79,\n            \"sku\": \"BED-002\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-11-13T03:58:24.3523115\",\n            \"orderItems\": [\n                {\n                    \"id\": 3,\n                    \"quantity\": 1,\n                    \"unitPrice\": 39.99,\n                    \"totalPrice\": 39.99,\n                    \"createdAt\": \"2025-11-13T03:58:24.1540452\",\n                    \"updatedAt\": \"2025-11-13T03:58:24.1540582\"\n                }\n            ]\n        },\n        {\n            \"id\": 3,\n            \"name\": \"Stainless Steel Mixing Bowls\",\n            \"description\": \"Set of 5 mixing bowls in various sizes\",\n            \"price\": 45.99,\n            \"stockQuantity\": 100,\n            \"sku\": \"KIT-003\",\n            \"imageUrl\": null,\n            \"isActive\": true,\n            \"createdAt\": \"2025-10-31T04:21:05.31\",\n            \"updatedAt\": \"2025-10-31T04:21:05.31\",\n            \"orderItems\": []\n        }\n    ],\n    \"pageable\": {\n        \"pageNumber\": 0,\n        \"pageSize\": 10,\n        \"sort\": {\n            \"unsorted\": false,\n            \"sorted\": true,\n            \"empty\": false\n        },\n        \"offset\": 0,\n        \"unpaged\": false,\n        \"paged\": true\n    },\n    \"totalPages\": 2,\n    \"totalElements\": 18,\n    \"last\": false,\n    \"numberOfElements\": 10,\n    \"size\": 10,\n    \"number\": 0,\n    \"sort\": {\n        \"unsorted\": false,\n        \"sorted\": true,\n        \"empty\": false\n    },\n    \"first\": true,\n    \"empty\": false\n}"
+						}
+					]
+				}
+			],
+			"description": "Product management endpoints"
+		},
+		{
+			"name": "3. Categories",
+			"item": [
+				{
+					"name": "Get All Categories",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('TC-CAT-01: Categories Response', () => {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.be.an('array');",
+									"    if (response.length > 0) { pm.environment.set('categoryId', response[0].id); }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/categories",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"categories"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Get All Categories",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{userToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/categories",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"categories"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Date",
+									"value": "Fri, 28 Nov 2025 01:25:08 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "CF-RAY",
+									"value": "9a5611c1ace59c2f-SIN"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Content-Encoding",
+									"value": "br"
+								},
+								{
+									"key": "expires",
+									"value": "0"
+								},
+								{
+									"key": "pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "rndr-id",
+									"value": "73fd4cba-b6c2-458e"
+								},
+								{
+									"key": "strict-transport-security",
+									"value": "max-age=31536000 ; includeSubDomains"
+								},
+								{
+									"key": "vary",
+									"value": "Origin"
+								},
+								{
+									"key": "vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "vary",
+									"value": "Accept-Encoding"
+								},
+								{
+									"key": "x-content-type-options",
+									"value": "nosniff"
+								},
+								{
+									"key": "x-frame-options",
+									"value": "DENY"
+								},
+								{
+									"key": "x-render-origin-server",
+									"value": "Render"
+								},
+								{
+									"key": "x-xss-protection",
+									"value": "0"
+								},
+								{
+									"key": "cf-cache-status",
+									"value": "DYNAMIC"
+								},
+								{
+									"key": "Server",
+									"value": "cloudflare"
+								},
+								{
+									"key": "alt-svc",
+									"value": "h3=\":443\"; ma=86400"
+								}
+							],
+							"cookie": [],
+							"body": "[\n    {\n        \"id\": 1,\n        \"name\": \"Bathroom Supplies\",\n        \"description\": \"Bathroom amenities and supplies\",\n        \"isActive\": true,\n        \"createdAt\": \"2025-10-31T02:56:45.5266667\",\n        \"updatedAt\": \"2025-10-31T02:56:45.5266667\",\n        \"products\": [\n            {\n                \"id\": 1,\n                \"name\": \"Professional Chef Knife Set\",\n                \"description\": \"High-quality stainless steel knife set for professional kitchens\",\n                \"price\": 89.99,\n                \"stockQuantity\": 50,\n                \"sku\": \"KIT-001\",\n                \"imageUrl\": null,\n                \"isActive\": true,\n                \"createdAt\": \"2025-10-31T04:21:05.31\",\n                \"updatedAt\": \"2025-10-31T04:21:05.31\",\n                \"orderItems\": []\n            },\n            {\n                \"id\": 2,\n                \"name\": \"Commercial Coffee Maker\",\n                \"description\": \"Large capacity coffee maker for hotel breakfast service\",\n                \"price\": 299.99,\n                \"stockQuantity\": 23,\n                \"sku\": \"KIT-002\",\n                \"imageUrl\": null,\n                \"isActive\": true,\n                \"createdAt\": \"2025-10-31T04:21:05.31\",\n                \"updatedAt\": \"2025-11-11T07:14:39.0876558\",\n                \"orderItems\": [\n                    {\n                        \"id\": 1,\n                        \"quantity\": 1,\n                        \"unitPrice\": 299.99,\n                        \"totalPrice\": 299.99,\n                        \"createdAt\": \"2025-11-11T07:07:11.4611382\",\n                        \"updatedAt\": \"2025-11-11T07:07:11.4611382\"\n                    },\n                    {\n                        \"id\": 2,\n                        \"quantity\": 1,\n                        \"unitPrice\": 299.99,\n                        \"totalPrice\": 299.99,\n                        \"createdAt\": \"2025-11-11T07:14:38.9121634\",\n                        \"updatedAt\": \"2025-11-11T07:14:38.9121634\"\n                    }\n                ]\n            },\n            {\n                \"id\": 3,\n                \"name\": \"Stainless Steel Mixing Bowls\",\n                \"description\": \"Set of 5 mixing bowls in various sizes\",\n                \"price\": 45.99,\n                \"stockQuantity\": 100,\n                \"sku\": \"KIT-003\",\n                \"imageUrl\": null,\n                \"isActive\": true,\n                \"createdAt\": \"2025-10-31T04:21:05.31\",\n                \"updatedAt\": \"2025-10-31T04:21:05.31\",\n                \"orderItems\": []\n            },\n            {\n                \"id\": 4,\n                \"name\": \"Commercial Blender\",\n                \"description\": \"Heavy-duty blender for smoothies and food preparation\",\n                \"price\": 199.99,\n                \"stockQuantity\": 30,\n                \"sku\": \"KIT-004\",\n                \"imageUrl\": null,\n                \"isActive\": true,\n                \"createdAt\": \"2025-10-31T04:21:05.31\",\n                \"updatedAt\": \"2025-10-31T04:21:05.31\",\n                \"orderItems\": []\n            }\n        ]\n    },\n    {\n        \"id\": 2,\n        \"name\": \"Bedding & Linens\",\n        \"description\": \"Bed sheets, towels, and other linens\",\n        \"isActive\": true,\n        \"createdAt\": \"2025-10-31T02:56:45.5266667\",\n        \"updatedAt\": \"2025-10-31T02:56:45.5266667\",\n        \"products\": [\n            {\n                \"id\": 5,\n                \"name\": \"Multi-Purpose Cleaner\",\n                \"description\": \"Eco-friendly all-purpose cleaner concentrate\",\n                \"price\": 12.99,\n                \"stockQuantity\": 200,\n                \"sku\": \"CLE-001\",\n                \"imageUrl\": null,\n                \"isActive\": true,\n                \"createdAt\": \"2025-10-31T04:21:05.31\",\n                \"updatedAt\": \"2025-10-31T04:21:05.31\",\n                \"orderItems\": []\n            },\n            {\n                \"id\": 6,\n                \"name\": \"Microfiber Cleaning Cloths\",\n                \"description\": \"Pack of 24 high-quality microfiber cloths\",\n                \"price\": 18.99,\n                \"stockQuantity\": 150,\n                \"sku\": \"CLE-002\",\n                \"imageUrl\": null,\n                \"isActive\": true,\n                \"createdAt\": \"2025-10-31T04:21:05.31\",\n                \"updatedAt\": \"2025-10-31T04:21:05.31\",\n                \"orderItems\": []\n            },\n            {\n                \"id\": 7,\n                \"name\": \"Commercial Vacuum Cleaner\",\n                \"description\": \"Heavy-duty vacuum for hotel housekeeping\",\n                \"price\": 399.99,\n                \"stockQuantity\": 15,\n                \"sku\": \"CLE-003\",\n                \"imageUrl\": null,\n                \"isActive\": true,\n                \"createdAt\": \"2025-10-31T04:21:05.31\",\n                \"updatedAt\": \"2025-10-31T04:21:05.31\",\n                \"orderItems\": []\n            },\n            {\n                \"id\": 8,\n                \"name\": \"Disinfectant Spray\",\n                \"description\": \"Hospital-grade disinfectant spray\",\n                \"price\": 8.99,\n                \"stockQuantity\": 300,\n                \"sku\": \"CLE-004\",\n                \"imageUrl\": null,\n                \"isActive\": true,\n                \"createdAt\": \"2025-10-31T04:21:05.31\",\n                \"updatedAt\": \"2025-10-31T04:21:05.31\",\n                \"orderItems\": []\n            }\n        ]\n    },\n    {\n        \"id\": 3,\n        \"name\": \"Cleaning Supplies\",\n        \"description\": \"Cleaning and maintenance products\",\n        \"isActive\": true,\n        \"createdAt\": \"2025-10-31T02:56:45.5266667\",\n        \"updatedAt\": \"2025-10-31T02:56:45.5266667\",\n        \"products\": [\n            {\n                \"id\": 9,\n                \"name\": \"Premium Cotton Sheets\",\n                \"description\": \"100% cotton bed sheets, set of 2\",\n                \"price\": 49.99,\n                \"stockQuantity\": 100,\n                \"sku\": \"BED-001\",\n                \"imageUrl\": null,\n                \"isActive\": true,\n                \"createdAt\": \"2025-10-31T04:21:05.31\",\n                \"updatedAt\": \"2025-10-31T04:21:05.31\",\n                \"orderItems\": []\n            },\n            {\n                \"id\": 10,\n                \"name\": \"Bath Towel Set\",\n                \"description\": \"Set of 4 premium bath towels\",\n                \"price\": 39.99,\n                \"stockQuantity\": 79,\n                \"sku\": \"BED-002\",\n                \"imageUrl\": null,\n                \"isActive\": true,\n                \"createdAt\": \"2025-10-31T04:21:05.31\",\n                \"updatedAt\": \"2025-11-13T03:58:24.3523115\",\n                \"orderItems\": [\n                    {\n                        \"id\": 3,\n                        \"quantity\": 1,\n                        \"unitPrice\": 39.99,\n                        \"totalPrice\": 39.99,\n                        \"createdAt\": \"2025-11-13T03:58:24.1540452\",\n                        \"updatedAt\": \"2025-11-13T03:58:24.1540582\"\n                    }\n                ]\n            },\n            {\n                \"id\": 11,\n                \"name\": \"Pillow Cases\",\n                \"description\": \"Pack of 4 white pillow cases\",\n                \"price\": 24.99,\n                \"stockQuantity\": 120,\n                \"sku\": \"BED-003\",\n                \"imageUrl\": null,\n                \"isActive\": true,\n                \"createdAt\": \"2025-10-31T04:21:05.31\",\n                \"updatedAt\": \"2025-10-31T04:21:05.31\",\n                \"orderItems\": []\n            },\n            {\n                \"id\": 12,\n                \"name\": \"Duvet Cover Set\",\n                \"description\": \"Luxury duvet cover with matching pillow cases\",\n                \"price\": 79.99,\n                \"stockQuantity\": 60,\n                \"sku\": \"BED-004\",\n                \"imageUrl\": null,\n                \"isActive\": true,\n                \"createdAt\": \"2025-10-31T04:21:05.31\",\n                \"updatedAt\": \"2025-10-31T04:21:05.31\",\n                \"orderItems\": []\n            }\n        ]\n    },\n    {\n        \"id\": 4,\n        \"name\": \"Kitchen Supplies\",\n        \"description\": \"Kitchen and cooking equipment for hotels\",\n        \"isActive\": true,\n        \"createdAt\": \"2025-10-31T02:56:45.5266667\",\n        \"updatedAt\": \"2025-10-31T02:56:45.5266667\",\n        \"products\": [\n            {\n                \"id\": 13,\n                \"name\": \"Shampoo Dispensers\",\n                \"description\": \"Wall-mounted shampoo dispensers\",\n                \"price\": 29.99,\n                \"stockQuantity\": 50,\n                \"sku\": \"BAT-001\",\n                \"imageUrl\": null,\n                \"isActive\": true,\n                \"createdAt\": \"2025-10-31T04:21:05.31\",\n                \"updatedAt\": \"2025-10-31T04:21:05.31\",\n                \"orderItems\": []\n            },\n            {\n                \"id\": 14,\n                \"name\": \"Soap Dispensers\",\n                \"description\": \"Automatic soap dispensers\",\n                \"price\": 19.99,\n                \"stockQuantity\": 75,\n                \"sku\": \"BAT-002\",\n                \"imageUrl\": null,\n                \"isActive\": true,\n                \"createdAt\": \"2025-10-31T04:21:05.31\",\n                \"updatedAt\": \"2025-10-31T04:21:05.31\",\n                \"orderItems\": []\n            },\n            {\n                \"id\": 15,\n                \"name\": \"Bathroom Mirrors\",\n                \"description\": \"Framed bathroom mirrors, various sizes\",\n                \"price\": 89.99,\n                \"stockQuantity\": 40,\n                \"sku\": \"BAT-003\",\n                \"imageUrl\": null,\n                \"isActive\": true,\n                \"createdAt\": \"2025-10-31T04:21:05.31\",\n                \"updatedAt\": \"2025-10-31T04:21:05.31\",\n                \"orderItems\": []\n            },\n            {\n                \"id\": 16,\n                \"name\": \"Towel Racks\",\n                \"description\": \"Stainless steel towel racks\",\n                \"price\": 34.99,\n                \"stockQuantity\": 90,\n                \"sku\": \"BAT-004\",\n                \"imageUrl\": null,\n                \"isActive\": true,\n                \"createdAt\": \"2025-10-31T04:21:05.31\",\n                \"updatedAt\": \"2025-10-31T04:21:05.31\",\n                \"orderItems\": []\n            }\n        ]\n    },\n    {\n        \"id\": 5,\n        \"name\": \"Maintenance Tools\",\n        \"description\": \"Tools and equipment for hotel maintenance\",\n        \"isActive\": true,\n        \"createdAt\": \"2025-10-31T02:56:45.5266667\",\n        \"updatedAt\": \"2025-10-31T02:56:45.5266667\",\n        \"products\": [\n            {\n                \"id\": 17,\n                \"name\": \"Desk Organizer Set\",\n                \"description\": \"Professional desk organizer with compartments\",\n                \"price\": 25.99,\n                \"stockQuantity\": 100,\n                \"sku\": \"OFF-001\",\n                \"imageUrl\": null,\n                \"isActive\": true,\n                \"createdAt\": \"2025-10-31T04:21:05.31\",\n                \"updatedAt\": \"2025-10-31T04:21:05.31\",\n                \"orderItems\": []\n            },\n            {\n                \"id\": 18,\n                \"name\": \"Whiteboard Set\",\n                \"description\": \"Magnetic whiteboard with markers\",\n                \"price\": 45.99,\n                \"stockQuantity\": 50,\n                \"sku\": \"OFF-002\",\n                \"imageUrl\": null,\n                \"isActive\": true,\n                \"createdAt\": \"2025-10-31T04:21:05.31\",\n                \"updatedAt\": \"2025-10-31T04:21:05.31\",\n                \"orderItems\": []\n            },\n            {\n                \"id\": 19,\n                \"name\": \"Filing Cabinet\",\n                \"description\": \"2-drawer filing cabinet\",\n                \"price\": 89.99,\n                \"stockQuantity\": 30,\n                \"sku\": \"OFF-003\",\n                \"imageUrl\": null,\n                \"isActive\": true,\n                \"createdAt\": \"2025-10-31T04:21:05.31\",\n                \"updatedAt\": \"2025-10-31T04:21:05.31\",\n                \"orderItems\": []\n            },\n            {\n                \"id\": 20,\n                \"name\": \"Office Chairs\",\n                \"description\": \"Ergonomic office chairs\",\n                \"price\": 149.99,\n                \"stockQuantity\": 25,\n                \"sku\": \"OFF-004\",\n                \"imageUrl\": null,\n                \"isActive\": true,\n                \"createdAt\": \"2025-10-31T04:21:05.31\",\n                \"updatedAt\": \"2025-10-31T04:21:05.31\",\n                \"orderItems\": []\n            }\n        ]\n    },\n    {\n        \"id\": 6,\n        \"name\": \"Office Supplies\",\n        \"description\": \"Office equipment and stationery\",\n        \"isActive\": true,\n        \"createdAt\": \"2025-10-31T02:56:45.5266667\",\n        \"updatedAt\": \"2025-10-31T02:56:45.5266667\",\n        \"products\": [\n            {\n                \"id\": 21,\n                \"name\": \"Tool Kit Set\",\n                \"description\": \"Complete tool kit for hotel maintenance\",\n                \"price\": 79.99,\n                \"stockQuantity\": 40,\n                \"sku\": \"MAI-001\",\n                \"imageUrl\": null,\n                \"isActive\": true,\n                \"createdAt\": \"2025-10-31T04:21:05.31\",\n                \"updatedAt\": \"2025-10-31T04:21:05.31\",\n                \"orderItems\": []\n            },\n            {\n                \"id\": 22,\n                \"name\": \"Ladder Set\",\n                \"description\": \"Multi-purpose aluminum ladders\",\n                \"price\": 129.99,\n                \"stockQuantity\": 20,\n                \"sku\": \"MAI-002\",\n                \"imageUrl\": null,\n                \"isActive\": true,\n                \"createdAt\": \"2025-10-31T04:21:05.31\",\n                \"updatedAt\": \"2025-10-31T04:21:05.31\",\n                \"orderItems\": []\n            },\n            {\n                \"id\": 23,\n                \"name\": \"Power Drill Set\",\n                \"description\": \"Cordless power drill with accessories\",\n                \"price\": 99.99,\n                \"stockQuantity\": 35,\n                \"sku\": \"MAI-003\",\n                \"imageUrl\": null,\n                \"isActive\": true,\n                \"createdAt\": \"2025-10-31T04:21:05.31\",\n                \"updatedAt\": \"2025-10-31T04:21:05.31\",\n                \"orderItems\": []\n            },\n            {\n                \"id\": 24,\n                \"name\": \"Safety Equipment\",\n                \"description\": \"Safety goggles, gloves, and hard hats\",\n                \"price\": 29.99,\n                \"stockQuantity\": 100,\n                \"sku\": \"MAI-004\",\n                \"imageUrl\": null,\n                \"isActive\": true,\n                \"createdAt\": \"2025-10-31T04:21:05.31\",\n                \"updatedAt\": \"2025-10-31T04:21:05.31\",\n                \"orderItems\": []\n            }\n        ]\n    }\n]"
+						}
+					]
+				}
+			],
+			"description": "Category management endpoints"
+		},
+		{
+			"name": "Admin - Categories",
+			"item": [
+				{
+					"name": "Admin: Get All Categories",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('TC-ADMIN-CAT-01: Admin Get All Categories', () => {",
+									"  const r = pm.response.json();",
+									"  pm.expect(r).to.be.an('array');",
+									"  if (r.length > 0) pm.environment.set('adminCategoryId', r[0].id);",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/admin/categories",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"categories"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Admin: Create Category",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('TC-ADMIN-CAT-02: Create Category', () => {",
+									"  pm.expect(pm.response.code).to.be.oneOf([200,201]);",
+									"  const r = pm.response.json();",
+									"  if (r && r.id) pm.environment.set('adminCreatedCategoryId', r.id);",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Test Category {{randomInt}}\",\n  \"description\": \"Created by automated test\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/admin/categories",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"categories"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Admin: Update Category",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('TC-ADMIN-CAT-03: Update Category', () => { pm.expect(pm.response.code).to.equal(200); });"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Category {{randomInt}}\",\n  \"description\": \"Updated by automated test\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/categories/{{adminCategoryId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"categories",
+								"{{adminCategoryId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Admin: Deactivate Category",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('TC-ADMIN-CAT-04: Deactivate Category', () => { pm.expect(pm.response.code).to.be.oneOf([200]); });"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/categories/{{adminCategoryId}}/deactivate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"categories",
+								"{{adminCategoryId}}",
+								"deactivate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Admin: Activate Category",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('TC-ADMIN-CAT-05: Activate Category', () => { pm.expect(pm.response.code).to.be.oneOf([200]); });"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/categories/{{adminCategoryId}}/activate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"categories",
+								"{{adminCategoryId}}",
+								"activate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Admin: Delete Category",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('TC-ADMIN-CAT-06: Delete Category', () => { pm.expect(pm.response.code).to.be.oneOf([200,204]); });"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/categories/{{adminCategoryId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"categories",
+								"{{adminCategoryId}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Admin category management endpoints (admin only)"
+		},
+		{
+			"name": "Admin - Users",
+			"item": [
+				{
+					"name": "Admin: Get All Users",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('TC-ADMIN-USR-01: Get all users', () => { const r = pm.response.json(); pm.expect(r).to.be.an('array'); if (r.length>0) pm.environment.set('adminUserId', r[0].id); });"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/admin/users",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"users"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Admin: Get All Users",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{userToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/admin/users",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"users"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Date",
+									"value": "Fri, 28 Nov 2025 01:38:33 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "CF-RAY",
+									"value": "9a562575f90b89bc-SIN"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Content-Encoding",
+									"value": "br"
+								},
+								{
+									"key": "expires",
+									"value": "0"
+								},
+								{
+									"key": "pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "rndr-id",
+									"value": "c55db492-30ed-490a"
+								},
+								{
+									"key": "strict-transport-security",
+									"value": "max-age=31536000 ; includeSubDomains"
+								},
+								{
+									"key": "vary",
+									"value": "Origin"
+								},
+								{
+									"key": "vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "vary",
+									"value": "Accept-Encoding"
+								},
+								{
+									"key": "x-content-type-options",
+									"value": "nosniff"
+								},
+								{
+									"key": "x-frame-options",
+									"value": "DENY"
+								},
+								{
+									"key": "x-render-origin-server",
+									"value": "Render"
+								},
+								{
+									"key": "x-xss-protection",
+									"value": "0"
+								},
+								{
+									"key": "cf-cache-status",
+									"value": "DYNAMIC"
+								},
+								{
+									"key": "Server",
+									"value": "cloudflare"
+								},
+								{
+									"key": "alt-svc",
+									"value": "h3=\":443\"; ma=86400"
+								}
+							],
+							"cookie": [],
+							"body": "[\n    {\n        \"id\": 1,\n        \"username\": \"admin\",\n        \"email\": \"admin@novahotelsupplies.com\",\n        \"password\": \"$2a$10$kT6nNhXGSNUd6iomXW/HdeQcQbRbJYQIq.A2IagvE8.Ul3.ONx.fu\",\n        \"fullName\": \"System Administrator\",\n        \"phoneNumber\": null,\n        \"address\": null,\n        \"role\": \"ADMIN\",\n        \"isActive\": true,\n        \"createdAt\": \"2025-10-31T02:56:45.54\",\n        \"updatedAt\": \"2025-10-31T02:56:45.54\",\n        \"firstName\": null,\n        \"lastName\": null,\n        \"credentialsNonExpired\": true,\n        \"accountNonExpired\": true,\n        \"accountNonLocked\": true,\n        \"authorities\": [\n            {\n                \"authority\": \"ROLE_ADMIN\"\n            }\n        ],\n        \"enabled\": true\n    },\n    {\n        \"id\": 2,\n        \"username\": \"owner\",\n        \"email\": \"owner@novahotelsupplies.com\",\n        \"password\": \"$2a$10$Qn/J7pLj.COcZHfy.iJWgep5OUF1BJ8PVvJLbx6zRuWsUUQWcoSF6\",\n        \"fullName\": \"Hotel Owner\",\n        \"phoneNumber\": null,\n        \"address\": null,\n        \"role\": \"OWNER\",\n        \"isActive\": true,\n        \"createdAt\": \"2025-10-31T02:56:45.55\",\n        \"updatedAt\": \"2025-10-31T02:56:45.55\",\n        \"firstName\": null,\n        \"lastName\": null,\n        \"credentialsNonExpired\": true,\n        \"accountNonExpired\": true,\n        \"accountNonLocked\": true,\n        \"authorities\": [\n            {\n                \"authority\": \"ROLE_OWNER\"\n            }\n        ],\n        \"enabled\": true\n    },\n    {\n        \"id\": 4,\n        \"username\": \"jaydev@gmail.com\",\n        \"email\": \"jaydev@gmail.com\",\n        \"password\": \"$2a$10$Tr12cUgfGpPC4i1RNhxB2up6BVDn/SlNgXi4Zl4gk2z4AnIX9gBIe\",\n        \"fullName\": \"Jaydev Sahu\",\n        \"phoneNumber\": \"1234567890\",\n        \"address\": \"123 Test St, Test City\",\n        \"role\": \"USER\",\n        \"isActive\": true,\n        \"createdAt\": \"2025-10-31T03:30:51.5114362\",\n        \"updatedAt\": \"2025-10-31T03:30:51.5114362\",\n        \"firstName\": \"Jaydev\",\n        \"lastName\": \"Sahu\",\n        \"credentialsNonExpired\": true,\n        \"accountNonExpired\": true,\n        \"accountNonLocked\": true,\n        \"authorities\": [\n            {\n                \"authority\": \"ROLE_USER\"\n            }\n        ],\n        \"enabled\": true\n    }\n]"
+						}
+					]
+				},
+				{
+					"name": "Admin: Get User By ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('TC-ADMIN-USR-02: Get user by id', () => { pm.expect(pm.response.code).to.be.oneOf([200]); });"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/admin/users/{{adminUserId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"users",
+								"{{adminUserId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Admin: Update User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('TC-ADMIN-USR-03: Update user returns 200', () => { pm.expect(pm.response.code).to.equal(200); });"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"Updated\",\n  \"lastName\": \"User\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/admin/users/{{adminUserId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"users",
+								"{{adminUserId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Admin: Deactivate User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('TC-ADMIN-USR-04: Deactivate user', () => { pm.expect(pm.response.code).to.be.oneOf([200]); });"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/admin/users/{{adminUserId}}/deactivate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"users",
+								"{{adminUserId}}",
+								"deactivate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Admin: Activate User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('TC-ADMIN-USR-05: Activate user', () => { pm.expect(pm.response.code).to.be.oneOf([200]); });"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/admin/users/{{adminUserId}}/activate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"users",
+								"{{adminUserId}}",
+								"activate"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Admin user management endpoints (admin only)"
+		},
+		{
+			"name": "Admin - Products",
+			"item": [
+				{
+					"name": "Admin: Create Product",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('TC-ADMIN-PROD-01: Create product', () => { pm.expect(pm.response.code).to.be.oneOf([200,201]); const r=pm.response.json(); if (r && r.id) pm.environment.set('adminProductId', r.id); });"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Deluxe Room\",\n  \"description\": \"Spacious deluxe room with king-size bed, complimentary breakfast, WiFi, and city view.\",\n  \"price\": 3500,\n  \"stockQuantity\": 10,\n  \"categoryId\": {{adminCategoryId}}\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/admin/products",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"products"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Admin: Update Product",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('TC-ADMIN-PROD-02: Update product returns 200', () => { pm.expect(pm.response.code).to.equal(200); });"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Product {{randomInt}}\",\n  \"price\": 19.99\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/admin/products/{{adminProductId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"products",
+								"{{adminProductId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Admin: Deactivate Product",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('TC-ADMIN-PROD-03: Deactivate product', () => { pm.expect(pm.response.code).to.be.oneOf([200]); });"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/admin/products/{{adminProductId}}/deactivate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"products",
+								"{{adminProductId}}",
+								"deactivate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Admin: Activate Product",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('TC-ADMIN-PROD-04: Activate product', () => { pm.expect(pm.response.code).to.be.oneOf([200]); });"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/products/{{adminProductId}}/activate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"products",
+								"{{adminProductId}}",
+								"activate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Admin: Upload Product Image",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('TC-ADMIN-PROD-05: Upload image returns 200', () => { pm.expect(pm.response.code).to.be.oneOf([200]); });"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"value": "",
+									"type": "file"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/products/upload-image",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"products",
+								"upload-image"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Admin product management endpoints (admin only)"
+		},
+		{
+			"name": "Admin - Orders",
+			"item": [
+				{
+					"name": "Admin: Get All Orders",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('TC-ADMIN-ORD-01: Get all orders', () => { pm.expect(pm.response.code).to.equal(200); const r=pm.response.json(); if (r && r.content && r.content.length>0) pm.environment.set('adminOrderId', r.content[0].id); });"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/admin/orders?page=0&size=10&sortBy=createdAt&sortDir=desc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"orders"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								},
+								{
+									"key": "sortBy",
+									"value": "createdAt"
+								},
+								{
+									"key": "sortDir",
+									"value": "desc"
+								}
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Admin: Get All Orders",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{userToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/admin/orders?page=0&size=10&sortBy=createdAt&sortDir=desc",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"orders"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "0"
+										},
+										{
+											"key": "size",
+											"value": "10"
+										},
+										{
+											"key": "sortBy",
+											"value": "createdAt"
+										},
+										{
+											"key": "sortDir",
+											"value": "desc"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Date",
+									"value": "Fri, 28 Nov 2025 02:24:01 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "CF-RAY",
+									"value": "9a566330a9175f9f-SIN"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Content-Encoding",
+									"value": "br"
+								},
+								{
+									"key": "expires",
+									"value": "0"
+								},
+								{
+									"key": "pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "rndr-id",
+									"value": "d040d435-2ec5-4b01"
+								},
+								{
+									"key": "strict-transport-security",
+									"value": "max-age=31536000 ; includeSubDomains"
+								},
+								{
+									"key": "vary",
+									"value": "Origin"
+								},
+								{
+									"key": "vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "vary",
+									"value": "Accept-Encoding"
+								},
+								{
+									"key": "x-content-type-options",
+									"value": "nosniff"
+								},
+								{
+									"key": "x-frame-options",
+									"value": "DENY"
+								},
+								{
+									"key": "x-render-origin-server",
+									"value": "Render"
+								},
+								{
+									"key": "x-xss-protection",
+									"value": "0"
+								},
+								{
+									"key": "cf-cache-status",
+									"value": "DYNAMIC"
+								},
+								{
+									"key": "Server",
+									"value": "cloudflare"
+								},
+								{
+									"key": "alt-svc",
+									"value": "h3=\":443\"; ma=86400"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"content\": [\n        {\n            \"id\": 3,\n            \"orderNumber\": \"ORD-1763006303554\",\n            \"userId\": 1,\n            \"status\": \"PENDING\",\n            \"totalAmount\": 39.99,\n            \"shippingAddress\": \"123 Test St, Test City, 12345\",\n            \"notes\": \"Test order\",\n            \"paymentInfo\": null,\n            \"termsAccepted\": false,\n            \"createdAt\": \"2025-11-13T03:58:23.5547043\",\n            \"updatedAt\": \"2025-11-13T03:58:23.5547168\"\n        },\n        {\n            \"id\": 2,\n            \"orderNumber\": \"ORD-1762825477535\",\n            \"userId\": 4,\n            \"status\": \"APPROVED\",\n            \"totalAmount\": 299.99,\n            \"shippingAddress\": \"123 Test St, Test City, 12345\",\n            \"notes\": \"Test order\",\n            \"paymentInfo\": null,\n            \"termsAccepted\": false,\n            \"createdAt\": \"2025-11-11T07:14:37.5355229\",\n            \"updatedAt\": \"2025-11-11T09:02:31.0338464\"\n        },\n        {\n            \"id\": 1,\n            \"orderNumber\": \"ORD-1762825031359\",\n            \"userId\": 4,\n            \"status\": \"PENDING\",\n            \"totalAmount\": 299.99,\n            \"shippingAddress\": \"123 Test St, Test City, 12345\",\n            \"notes\": \"Test order\",\n            \"paymentInfo\": null,\n            \"termsAccepted\": false,\n            \"createdAt\": \"2025-11-11T07:07:11.359437\",\n            \"updatedAt\": \"2025-11-11T07:07:11.359437\"\n        }\n    ],\n    \"pageable\": {\n        \"pageNumber\": 0,\n        \"pageSize\": 10,\n        \"sort\": {\n            \"sorted\": true,\n            \"unsorted\": false,\n            \"empty\": false\n        },\n        \"offset\": 0,\n        \"paged\": true,\n        \"unpaged\": false\n    },\n    \"totalPages\": 1,\n    \"totalElements\": 3,\n    \"last\": true,\n    \"numberOfElements\": 3,\n    \"size\": 10,\n    \"number\": 0,\n    \"sort\": {\n        \"sorted\": true,\n        \"unsorted\": false,\n        \"empty\": false\n    },\n    \"first\": true,\n    \"empty\": false\n}"
+						}
+					]
+				},
+				{
+					"name": "Admin: Get Orders By Status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('TC-ADMIN-ORD-02: Get orders by status', () => { pm.expect(pm.response.code).to.equal(200); });"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/orders/status/PENDING",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"orders",
+								"status",
+								"PENDING"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Admin: Get Orders By Status",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{userToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/admin/orders/status/PENDING",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"orders",
+										"status",
+										"PENDING"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Date",
+									"value": "Fri, 28 Nov 2025 02:25:24 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "CF-RAY",
+									"value": "9a566a178acafdaa-SIN"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Content-Encoding",
+									"value": "br"
+								},
+								{
+									"key": "expires",
+									"value": "0"
+								},
+								{
+									"key": "pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "rndr-id",
+									"value": "849d0c5f-8bef-4b06"
+								},
+								{
+									"key": "strict-transport-security",
+									"value": "max-age=31536000 ; includeSubDomains"
+								},
+								{
+									"key": "vary",
+									"value": "Origin"
+								},
+								{
+									"key": "vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "vary",
+									"value": "Accept-Encoding"
+								},
+								{
+									"key": "x-content-type-options",
+									"value": "nosniff"
+								},
+								{
+									"key": "x-frame-options",
+									"value": "DENY"
+								},
+								{
+									"key": "x-render-origin-server",
+									"value": "Render"
+								},
+								{
+									"key": "x-xss-protection",
+									"value": "0"
+								},
+								{
+									"key": "cf-cache-status",
+									"value": "DYNAMIC"
+								},
+								{
+									"key": "Server",
+									"value": "cloudflare"
+								},
+								{
+									"key": "alt-svc",
+									"value": "h3=\":443\"; ma=86400"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"content\": [\n        {\n            \"id\": 3,\n            \"orderNumber\": \"ORD-1763006303554\",\n            \"userId\": 1,\n            \"status\": \"PENDING\",\n            \"totalAmount\": 39.99,\n            \"shippingAddress\": \"123 Test St, Test City, 12345\",\n            \"notes\": \"Test order\",\n            \"paymentInfo\": null,\n            \"termsAccepted\": false,\n            \"createdAt\": \"2025-11-13T03:58:23.5547043\",\n            \"updatedAt\": \"2025-11-13T03:58:23.5547168\"\n        },\n        {\n            \"id\": 1,\n            \"orderNumber\": \"ORD-1762825031359\",\n            \"userId\": 4,\n            \"status\": \"PENDING\",\n            \"totalAmount\": 299.99,\n            \"shippingAddress\": \"123 Test St, Test City, 12345\",\n            \"notes\": \"Test order\",\n            \"paymentInfo\": null,\n            \"termsAccepted\": false,\n            \"createdAt\": \"2025-11-11T07:07:11.359437\",\n            \"updatedAt\": \"2025-11-11T07:07:11.359437\"\n        }\n    ],\n    \"pageable\": {\n        \"pageNumber\": 0,\n        \"pageSize\": 10,\n        \"sort\": {\n            \"sorted\": true,\n            \"unsorted\": false,\n            \"empty\": false\n        },\n        \"offset\": 0,\n        \"paged\": true,\n        \"unpaged\": false\n    },\n    \"totalPages\": 1,\n    \"totalElements\": 2,\n    \"last\": true,\n    \"numberOfElements\": 2,\n    \"size\": 10,\n    \"number\": 0,\n    \"sort\": {\n        \"sorted\": true,\n        \"unsorted\": false,\n        \"empty\": false\n    },\n    \"first\": true,\n    \"empty\": false\n}"
+						}
+					]
+				},
+				{
+					"name": "Admin: Update Order Status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('TC-ADMIN-ORD-03: Update order status', () => { pm.expect(pm.response.code).to.equal(200); });"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"DELIVERED\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/orders/{{adminOrderId}}/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"orders",
+								"{{adminOrderId}}",
+								"status"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Admin: Get Order Stats",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('TC-ADMIN-ORD-04: Get order stats', () => { pm.expect(pm.response.code).to.equal(200); });"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/orders/stats",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"orders",
+								"stats"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Admin order management endpoints (admin only)"
+		},
+		{
+			"name": "4. Orders",
+			"item": [
+				{
+					"name": "Create Order",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('TC-ORD-01: Order Creation Response', () => {",
+									"    const response = pm.response.json();",
+									"",
+									"    pm.expect(response).to.have.property('success');",
+									"    pm.expect(response).to.have.property('data');",
+									"",
+									"    if (response.success && response.data) {",
+									"        pm.environment.set('orderId', response.data.id);",
+									"        pm.expect(response.data).to.have.property('orderNumber');",
+									"        pm.expect(response.data).to.have.property('status');",
+									"        console.log('Order created:', response.data.id);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"cartItems\": [{\n        \"productId\": \"{{productId}}\",\n        \"quantity\": 1\n    }],\n    \"shippingAddress\": {\n        \"street\": \"123 Test St\",\n        \"city\": \"Test City\",\n        \"zipCode\": \"12345\"\n    },\n    \"notes\": \"Test order\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/orders/checkout",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders",
+								"checkout"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Order management endpoints"
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Get User By Login",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

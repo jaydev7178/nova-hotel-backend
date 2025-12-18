@@ -79,7 +79,18 @@ public class Product {
     private Category category;
     
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonBackReference
     private List<OrderItem> orderItems;
+    
+     @OneToMany(
+        mappedBy = "product",
+        cascade = CascadeType.ALL,
+        orphanRemoval = true,
+        fetch = FetchType.LAZY
+    )
+    @JsonBackReference
+    private List<ProductImage> images;
+
     
     @PrePersist
     protected void onCreate() {

@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.novahotel.dto.CheckoutRequest;
 import com.novahotel.dto.CheckoutRequest.ShippingAddressDto;
 import com.novahotel.dto.OrderDTO;
+import com.novahotel.dto.OrderItemDTO;
 import com.novahotel.entity.Order;
 import com.novahotel.entity.OrderItem;
 import com.novahotel.entity.Product;
@@ -20,8 +21,11 @@ import com.novahotel.entity.User;
 import com.novahotel.repository.OrderItemRepository;
 import com.novahotel.repository.OrderRepository;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class OrderService {
     
     @Autowired
@@ -38,6 +42,9 @@ public class OrderService {
 
     @Autowired
     private EmailService emailService;
+    
+    private final OrderItemService orderItemService;
+
     
     @Transactional
     public Order createOrder(Long userId, List<CheckoutRequest.CartItemDto> cartItems, 
@@ -265,6 +272,9 @@ public class OrderService {
     dto.setTermsAccepted(order.getTermsAccepted());
     dto.setCreatedAt(order.getCreatedAt());
     dto.setUpdatedAt(order.getUpdatedAt());
+    List<OrderItemDTO> itemDTOs = orderItemService.findByOrderId(order.getId());
+    dto.setOrderItems(itemDTOs);
+
     return dto;
 }
 

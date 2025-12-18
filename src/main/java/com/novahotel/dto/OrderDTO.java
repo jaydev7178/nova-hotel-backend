@@ -2,6 +2,7 @@ package com.novahotel.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.novahotel.entity.Order.OrderStatus;
 
@@ -24,6 +25,7 @@ public class OrderDTO {
     private Boolean termsAccepted;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private List<OrderItemDTO> orderItems;
     // Don't include orderItems unless needed
 }
 

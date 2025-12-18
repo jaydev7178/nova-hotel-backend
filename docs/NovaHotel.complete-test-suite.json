@@ -170,6 +170,184 @@
             ]
         },
         {
+            "name": "2.x Product Images",
+            "description": "Product image management: upload cover, add additional images, gallery, delete, replace",
+            "item": [
+                {
+                    "name": "Upload Product Cover Image",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{userToken}}" }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                { "key": "file", "type": "file", "src": "" }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/products/{{productId}}/images/cover",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["products","{{productId}}","images","cover"]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('TC-PROD-IMG-01: Upload cover returns 200/201', () => {",
+                                    "  pm.expect(pm.response.code).to.be.oneOf([200,201]);",
+                                    "  const r = pm.response.json();",
+                                    "  if (r && r.data) {",
+                                    "    const d = r.data;",
+                                    "    if (typeof d === 'string') pm.environment.set('uploadedCoverUrl', d);",
+                                    "    else if (d.url) pm.environment.set('uploadedCoverUrl', d.url);",
+                                    "    else if (d.filePath) pm.environment.set('uploadedCoverUrl', d.filePath);",
+                                    "    else if (Array.isArray(d) && d.length) pm.environment.set('uploadedCoverUrl', d[0].url || d[0]);",
+                                    "  }",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Add Additional Images",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{userToken}}" }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                { "key": "files", "type": "file", "src": "" }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/products/{{productId}}/images",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["products","{{productId}}","images"]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('TC-PROD-IMG-02: Add additional images returns 200/201', () => {",
+                                    "  pm.expect(pm.response.code).to.be.oneOf([200,201]);",
+                                    "  const r = pm.response.json();",
+                                    "  if (r && r.data) {",
+                                    "    // try to capture first uploaded URL if present",
+                                    "    const d = r.data;",
+                                    "    if (Array.isArray(d) && d.length) pm.environment.set('uploadedAdditionalUrls', d.map(x => x.url || x).join(','));",
+                                    "    else if (d.url) pm.environment.set('uploadedAdditionalUrls', d.url);",
+                                    "  }",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Get Product Gallery",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{userToken}}" }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/products/{{productId}}/images/gallery",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["products","{{productId}}","images","gallery"]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('TC-PROD-IMG-03: Gallery returns array', () => {",
+                                    "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                                    "  const r = pm.response.json();",
+                                    "  if (Array.isArray(r)) {",
+                                    "    if (r.length > 0) pm.environment.set('galleryFirstUrl', r[0].url || r[0]);",
+                                    "  } else if (r && r.data && Array.isArray(r.data)) {",
+                                    "    if (r.data.length>0) pm.environment.set('galleryFirstUrl', r.data[0].url || r.data[0]);",
+                                    "  }",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Delete Product Image",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{userToken}}" }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/products/{{productId}}/images?imageUrl={{galleryFirstUrl}}",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["products","{{productId}}","images"],
+                            "query": [ { "key": "imageUrl", "value": "{{galleryFirstUrl}}" } ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('TC-PROD-IMG-04: Delete image response 200/204', () => {",
+                                    "  pm.expect(pm.response.code).to.be.oneOf([200,204]);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Replace Additional Images",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{userToken}}" }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                { "key": "keepUrls", "value": "{{uploadedCoverUrl}}", "type": "text" },
+                                { "key": "files", "type": "file", "src": "" }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/products/{{productId}}/images?keepUrls={{uploadedCoverUrl}}",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["products","{{productId}}","images"],
+                            "query": [ { "key": "keepUrls", "value": "{{uploadedCoverUrl}}" } ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('TC-PROD-IMG-05: Replace additional images returns 200', () => {",
+                                    "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             "name": "2. Products",
             "description": "Product management endpoints",
             "item": [

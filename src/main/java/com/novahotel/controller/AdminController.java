@@ -1,23 +1,47 @@
 package com.novahotel.controller;
 
-import com.novahotel.dto.OrderDTO;
-import com.novahotel.entity.*;
-import com.novahotel.service.*;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.Arrays;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.novahotel.controller.ProductController.GalleryResponse;
+import com.novahotel.dto.CreateProductRequest;
+import com.novahotel.dto.OrderDTO;
+import com.novahotel.dto.ProductDTO;
+import com.novahotel.dto.UpdateProductRequest;
+import com.novahotel.entity.Category;
+import com.novahotel.entity.Order;
+import com.novahotel.entity.Product;
+import com.novahotel.entity.User;
+import com.novahotel.service.CategoryService;
+import com.novahotel.service.OrderService;
+import com.novahotel.service.ProductService;
+import com.novahotel.service.UserService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.List;
 
 @RestController
 @RequestMapping("/admin")
@@ -109,20 +133,87 @@ public class AdminController {
         return ResponseEntity.ok(new ApiResponse(true, "Category activated successfully", null));
     }
     
-    // Product Management
-    @PostMapping("/products")
-    @Operation(summary = "Create new product")
-    public ResponseEntity<Product> createProduct(@Valid @RequestBody Product product) {
-        Product createdProduct = productService.createProduct(product);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdProduct);
+    @PostMapping(
+        value = "/products",
+        consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+        produces = MediaType.APPLICATION_JSON_VALUE
+)
+public ResponseEntity<?> createProduct(
+        @Valid @ModelAttribute CreateProductRequest request) {
+
+    try {
+        /* 1️⃣ Fetch category */
+        Category category = categoryService.getCategoryById(request.getCategoryId());
+
+        /* 2️⃣ Create Product entity */
+        Product product = new Product();
+        product.setName(request.getName());
+        product.setDescription(request.getDescription());
+        product.setPrice(request.getPrice());
+        product.setStockQuantity(request.getStockQuantity());
+        product.setSku(request.getSku());
+        product.setIsActive(request.getIsActive());
+        product.setCategory(category);
+
+        /* 3️⃣ Save product first */
+        Product created = productService.createProduct(product);
+
+        Long productId = created.getId();
+
+        /* 4️⃣ Upload cover image (if present) */
+        if (request.getCoverImage() != null && !request.getCoverImage().isEmpty()) {
+            productService.attachCoverImage(productId, request.getCoverImage());
+        }
+
+        /* 5️⃣ Upload gallery images (if present) */
+        if (request.getGalleryImages() != null && !request.getGalleryImages().isEmpty()) {
+            productService.addAdditionalImages(productId, request.getGalleryImages());
+        }
+
+        /* 6️⃣ Return response */
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ProductDTO.fromEntity(productService.getProductById(productId)));
+
+    } catch (Exception e) {
+        return ResponseEntity.badRequest()
+                .body(new ApiResponse(false, e.getMessage(), null));
     }
+}
     
-    @PutMapping("/products/{id}")
-    @Operation(summary = "Update product")
-    public ResponseEntity<Product> updateProduct(@PathVariable("id") Long id, @Valid @RequestBody Product product) {
-        Product updatedProduct = productService.updateProduct(id, product);
-        return ResponseEntity.ok(updatedProduct);
+    @PutMapping(
+        value = "/products/{id}",
+        consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+        produces = MediaType.APPLICATION_JSON_VALUE
+)
+@Operation(summary = "Update product (with optional images)")
+public ResponseEntity<?> updateProduct(
+        @PathVariable("id") Long id,
+        @Valid @ModelAttribute UpdateProductRequest request) {
+
+    try {
+        /* 1️⃣ Update basic product fields */
+        Product updated = productService.updateProduct(id, request);
+
+        /* 2️⃣ Replace cover image (if provided) */
+        if (request.getCoverImage() != null && !request.getCoverImage().isEmpty()) {
+            productService.attachCoverImage(id, request.getCoverImage());
+        }
+
+        /* 3️⃣ Add gallery images (if provided) */
+        if (request.getGalleryImages() != null && !request.getGalleryImages().isEmpty()) {
+            productService.addAdditionalImages(id, request.getGalleryImages());
+        }
+
+        return ResponseEntity.ok(
+                ProductDTO.fromEntity(productService.getProductById(id))
+        );
+
+    } catch (Exception e) {
+        return ResponseEntity.badRequest()
+                .body(new ApiResponse(false, e.getMessage(), null));
     }
+}
     
     @PutMapping("/products/{id}/deactivate")
     @Operation(summary = "Deactivate product")
@@ -137,17 +228,34 @@ public class AdminController {
         productService.activateProduct(id);
         return ResponseEntity.ok(new ApiResponse(true, "Product activated successfully", null));
     }
-    
-    @PostMapping("/products/upload-image")
-    @Operation(summary = "Upload product image")
-    public ResponseEntity<?> uploadProductImage(@RequestParam("file") MultipartFile file) {
+
+    @DeleteMapping("/products/{id}")
+    @Operation(summary = "Delete product")
+    public ResponseEntity<?> deleteProduct(@PathVariable("id") Long productId) {
+
         try {
-            String imageUrl = productService.uploadProductImage(file);
-            return ResponseEntity.ok(new ApiResponse(true, "Image uploaded successfully", imageUrl));
+            productService.deleteProduct(productId);
+
+            return ResponseEntity.ok(
+                    new ApiResponse(true, "Product deleted successfully", null)
+            );
+
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new ApiResponse(false, e.getMessage(), null));
+            return ResponseEntity.badRequest()
+                    .body(new ApiResponse(false, e.getMessage(), null));
         }
     }
+    
+//    @PostMapping("/products/upload-image")
+//    @Operation(summary = "Upload product image")
+//    public ResponseEntity<?> uploadProductImage(@RequestParam("file") MultipartFile file) {
+//        try {
+//            String imageUrl = productService.uploadProductImage(file);
+//            return ResponseEntity.ok(new ApiResponse(true, "Image uploaded successfully", imageUrl));
+//        } catch (Exception e) {
+//            return ResponseEntity.badRequest().body(new ApiResponse(false, e.getMessage(), null));
+//        }
+//    }
     
     // Order Management
     @GetMapping("/orders")
@@ -199,6 +307,139 @@ public class AdminController {
         // This would need to be implemented in OrderService
         return ResponseEntity.ok(new ApiResponse(true, "Order statistics", null));
     }
+    
+    /* -------------------------------------------------
+     * Upload COVER image
+     * ------------------------------------------------- */
+    @PostMapping(
+        value = "/categories/{categoryId}/products/{productId}/images/cover",
+        consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<?> uploadCoverImage(
+    		@PathVariable("categoryId") Long categoryId,
+            @PathVariable("productId") Long productId,
+            @RequestParam("file") MultipartFile file) {
+
+        try {
+            // Validate category → product relation
+        	ProductDTO product = productService.getProductDTOById(productId);
+            if (!product.getCategoryId().equals(categoryId)) {
+                return ResponseEntity.badRequest()
+                        .body(new ApiResponse(false, "Product does not belong to category", null));
+            }
+
+            Product updated = productService.attachCoverImage(productId, file);
+
+            return ResponseEntity.ok(
+                    new ApiResponse(true, "Cover image uploaded successfully", updated.getImageUrl())
+            );
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(new ApiResponse(false, e.getMessage(), null));
+        }
+    }
+
+    /* -------------------------------------------------
+     * Upload GALLERY images
+     * ------------------------------------------------- */
+    @PostMapping(
+        value = "/categories/{categoryId}/products/{productId}/images/gallery",
+        consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<?> uploadGalleryImages(
+            @PathVariable Long categoryId,
+            @PathVariable Long productId,
+            @RequestParam("files") MultipartFile[] files) {
+
+        try {
+            Product product = productService.getProductById(productId);
+            if (!product.getCategory().getId().equals(categoryId)) {
+                return ResponseEntity.badRequest()
+                        .body(new ApiResponse(false, "Product does not belong to category", null));
+            }
+
+            productService.addAdditionalImages(productId, Arrays.asList(files));
+
+            return ResponseEntity.ok(
+                    new ApiResponse(
+                            true,
+                            "Gallery images uploaded successfully",
+                            productService.getAdditionalImages(productId)
+                    )
+            );
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(new ApiResponse(false, e.getMessage(), null));
+        }
+    }
+
+    /* -------------------------------------------------
+     * Upload COVER + GALLERY together
+     * ------------------------------------------------- */
+    @PostMapping(
+        value = "/categories/{categoryId}/products/{productId}/images/all",
+        consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<?> uploadCoverAndGallery(
+            @PathVariable Long categoryId,
+            @PathVariable Long productId,
+            @RequestParam(value = "cover", required = false) MultipartFile cover,
+            @RequestParam(value = "gallery", required = false) MultipartFile[] gallery) {
+
+        try {
+            Product product = productService.getProductById(productId);
+            if (!product.getCategory().getId().equals(categoryId)) {
+                return ResponseEntity.badRequest()
+                        .body(new ApiResponse(false, "Product does not belong to category", null));
+            }
+
+            Product updated = productService.uploadCoverAndGallery(
+                    productId,
+                    cover,
+                    gallery == null ? List.of() : Arrays.asList(gallery)
+            );
+
+            return ResponseEntity.ok(
+                    new ApiResponse(
+                            true,
+                            "Images uploaded successfully",
+                            new GalleryResponse(
+                                    updated.getImageUrl(),
+                                    productService.getAdditionalImages(productId)
+                            )
+                    )
+            );
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(new ApiResponse(false, e.getMessage(), null));
+        }
+    }
+
+    /* -------------------------------------------------
+     * Delete image (cover or gallery)
+     * ------------------------------------------------- */
+    @DeleteMapping("/products/{productId}/images")
+    public ResponseEntity<?> deleteImage(
+            @PathVariable Long productId,
+            @RequestParam("url") String imageUrl) {
+
+        try {
+            Product product = productService.removeImage(productId, imageUrl);
+            return ResponseEntity.ok(
+                    new ApiResponse(true, "Image removed successfully", product)
+            );
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(new ApiResponse(false, e.getMessage(), null));
+        }
+    }
+
+
+
     
     // DTOs
     public static class ApiResponse {

@@ -1,6 +1,8 @@
 package com.novahotel.repository;
 
-import com.novahotel.entity.Product;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -8,8 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Optional;
+import com.novahotel.entity.Product;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
@@ -39,6 +40,13 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     // Keep ORDER BY here since it returns List, not Page
     @Query("SELECT p FROM Product p WHERE p.stockQuantity <= :threshold AND p.isActive = true ORDER BY p.stockQuantity ASC")
     List<Product> findLowStockProducts(@Param("threshold") Integer threshold);
+
+    @Query("""
+        SELECT p FROM Product p
+        JOIN FETCH p.category
+        WHERE p.id = :productId
+        """)
+        Optional<Product> findByIdWithCategory(@Param("productId") Long productId);
     
     @Query("SELECT p FROM Product p WHERE p.price BETWEEN :minPrice AND :maxPrice AND p.isActive = true")
     Page<Product> findByPriceBetweenAndIsActiveTrue(
