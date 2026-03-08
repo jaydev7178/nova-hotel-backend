@@ -2,6 +2,8 @@ package com.novahotel.security;
 
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -15,7 +17,10 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-public class JwtAuthenticationFilter extends OncePerRequestFilter {     
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
+    
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
+    
     private final JwtUtil jwtUtil;
     private final UserService userService;
 
@@ -37,8 +42,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             jwt = authorizationHeader.substring(7);
             try {
                 username = jwtUtil.extractUsername(jwt);
+                log.debug("JWT token found for user: {}", username);
             } catch (Exception e) {
-                logger.error("JWT token is invalid or expired", e);
+                log.warn("JWT token is invalid or expired for request: {}", request.getRequestURI(), e);
             }
         }
         
@@ -50,6 +56,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         userDetails, null, userDetails.getAuthorities());
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
+                log.debug("User {} authenticated successfully", username);
+            } else {
+                log.warn("JWT token validation failed for user: {}", username);
             }
         }
         

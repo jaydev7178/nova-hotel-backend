@@ -3,6 +3,8 @@ package com.novahotel.service;
 import com.novahotel.entity.Order;
 import com.novahotel.entity.OrderItem;
 import com.novahotel.entity.User;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
@@ -20,6 +22,8 @@ import java.util.List;
 @Service
 public class EmailService {
     
+    private static final Logger log = LoggerFactory.getLogger(EmailService.class);
+    
     @Autowired
     private JavaMailSender mailSender;
     
@@ -33,6 +37,8 @@ public class EmailService {
     private String ownerEmail;
     
     public void sendOrderConfirmationEmail(Order order) {
+        log.info("Sending order confirmation email for order {} to {}", 
+            order.getOrderNumber(), order.getUser().getEmail());
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -50,7 +56,9 @@ public class EmailService {
             helper.setText(htmlContent, true);
             
             mailSender.send(message);
+            log.info("Order confirmation email sent successfully for order {}", order.getOrderNumber());
         } catch (MessagingException e) {
+            log.error("Failed to send order confirmation email for order {}", order.getOrderNumber(), e);
             throw new RuntimeException("Failed to send order confirmation email", e);
         }
     }

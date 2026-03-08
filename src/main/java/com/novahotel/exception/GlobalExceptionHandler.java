@@ -1,5 +1,7 @@
 package com.novahotel.exception;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -18,8 +20,11 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException ex, WebRequest request) {
+        log.error("Runtime exception occurred: {}", ex.getMessage(), ex);
         ErrorResponse errorResponse = new ErrorResponse(
             HttpStatus.BAD_REQUEST.value(),
             ex.getMessage(),
@@ -49,6 +54,7 @@ public class GlobalExceptionHandler {
     
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ErrorResponse> handleAuthenticationException(AuthenticationException ex, WebRequest request) {
+        log.warn("Authentication failed: {}", ex.getMessage());
         ErrorResponse errorResponse = new ErrorResponse(
             HttpStatus.UNAUTHORIZED.value(),
             "Authentication failed: " + ex.getMessage(),
@@ -82,6 +88,7 @@ public class GlobalExceptionHandler {
     
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGlobalException(Exception ex, WebRequest request) {
+        log.error("Unexpected error occurred: {}", ex.getMessage(), ex);
         ErrorResponse errorResponse = new ErrorResponse(
             HttpStatus.INTERNAL_SERVER_ERROR.value(),
             "An unexpected error occurred: " + ex.getMessage(),

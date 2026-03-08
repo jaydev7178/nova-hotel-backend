@@ -1,5 +1,9 @@
 package com.novahotel.controller;
 
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -18,10 +22,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.novahotel.dto.CartItemDto;
 import com.novahotel.dto.CheckoutRequest;
 import com.novahotel.dto.OrderDTO;
+import com.novahotel.dto.OrderItemDTO;
 import com.novahotel.entity.Order;
+import com.novahotel.entity.OrderItem;
+import com.novahotel.entity.Product;
 import com.novahotel.entity.User;
+import com.novahotel.repository.ProductRepository;
+import com.novahotel.service.OrderItemService;
 import com.novahotel.service.OrderService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -35,35 +45,162 @@ import jakarta.validation.Valid;
 @CrossOrigin(origins = "*")
 public class OrderController {
     
+    private static final Logger log = LoggerFactory.getLogger(OrderController.class);
+    
     @Autowired
     private OrderService orderService;
+    
+    @Autowired
+    private OrderItemService orderItemService;
+    
+    @Autowired
+    private ProductRepository productRepository;
+    
+    @PostMapping("/AddToCart")
+    @Operation(summary = "Add product to cart")
+    public ResponseEntity<?> addToCart(
+            @Valid @RequestBody OrderItemDTO request, 
+            Authentication authentication) {
+        log.info("Adding product {} to cart for user", request.getProductId());
+        try {
+            User user = (User) authentication.getPrincipal();
+            log.debug("User {} adding product {} with quantity {} to cart", 
+                user.getId(), request.getProductId(), request.getQuantity());
+            
+            // Fetch product from database
+            Product product = productRepository.findById(request.getProductId())
+                .orElseThrow(() -> new IllegalArgumentException("Product not found"));
+            
+            // Create OrderItem for cart (order is null)
+            OrderItem cartItem = new OrderItem();
+            cartItem.setUser(user);
+            cartItem.setProduct(product);
+            cartItem.setQuantity(request.getQuantity());
+            cartItem.setUnitPrice(request.getUnitPrice());
+            cartItem.setOrder(null); // Explicitly set order to null for cart
+            
+            // Save to cart using OrderItemService
+            OrderItem savedItem = orderItemService.saveToCart(cartItem);
+            OrderItemDTO responseDto = new OrderItemDTO();
+            responseDto.setId(savedItem.getId());
+            responseDto.setQuantity(savedItem.getQuantity());
+            responseDto.setUnitPrice(savedItem.getUnitPrice());
+            responseDto.setTotalPrice(savedItem.getTotalPrice());
+            responseDto.setProductId(savedItem.getProduct().getId());
+            responseDto.setUserId(savedItem.getUser().getId());
+            responseDto.setCreatedAt(savedItem.getCreatedAt());
+            responseDto.setUpdatedAt(savedItem.getUpdatedAt());
+            
+            log.info("Successfully added product {} to cart for user {}", 
+                request.getProductId(), user.getId());
+            return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ApiResponse(true, "Product added to cart successfully", responseDto));
+                
+        } catch (IllegalArgumentException e) {
+            log.warn("Failed to add product to cart: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                .body(new ApiResponse(false, e.getMessage(), null));
+                
+        } catch (Exception e) {
+            log.error("Unexpected error adding product to cart", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ApiResponse(false, "An error occurred while adding product to cart", null));
+        }
+    }
+    
+    @GetMapping("/GetCartItem")
+    @Operation(summary = "Get all cart items for authenticated user")
+    public ResponseEntity<?> getCartItems(Authentication authentication) {
+        log.info("Retrieving cart items for user");
+        try {
+            User user = (User) authentication.getPrincipal();
+            log.debug("Getting cart items for user {}", user.getId());
+            
+            // Get cart items where orderId is null
+            List<OrderItemDTO> cartItems = orderItemService.getCartItems(user.getId());
+            
+            log.info("Successfully retrieved {} cart items for user {}", 
+                cartItems.size(), user.getId());
+            return ResponseEntity.ok(new ApiResponse(true, "Cart items retrieved successfully", cartItems));
+                
+        } catch (Exception e) {
+            log.error("Error retrieving cart items", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ApiResponse(false, "An error occurred while retrieving cart items", null));
+        }
+    }
+    
+    @PostMapping("/RemoveFromCart")
+    @Operation(summary = "Remove product from cart")
+    public ResponseEntity<?> removeFromCart(
+            @RequestParam Long productId,
+            Authentication authentication) {
+        try {
+            User user = (User) authentication.getPrincipal();
+            
+            // Remove from cart where orderId is null
+            orderItemService.removeFromCart(user.getId(), productId);
+            
+            return ResponseEntity.ok(new ApiResponse(true, "Product removed from cart successfully", null));
+                
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                .body(new ApiResponse(false, e.getMessage(), null));
+                
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ApiResponse(false, "An error occurred while removing product from cart", null));
+        }
+    }
     
     @PostMapping("/checkout")
     @Operation(summary = "Create new order from cart")
     public ResponseEntity<?> checkout(
             @Valid @RequestBody CheckoutRequest request, 
             Authentication authentication) {
+        log.info("Processing checkout request");
         try {
             User user = (User) authentication.getPrincipal();
             
+            // Automatically fetch cart items using the same logic as GetCartItem
+            List<OrderItemDTO> orderItemDTOs = orderItemService.getCartItems(user.getId());
+            
+            if (orderItemDTOs.isEmpty()) {
+                return ResponseEntity.badRequest()
+                    .body(new ApiResponse(false, "Your cart is empty. Please add items to cart before checkout.", null));
+            }
+            
+            // Convert OrderItemDTO to CartItemDto
+            List<CartItemDto> cartItems = orderItemDTOs.stream()
+                .map(item -> {
+                    CartItemDto dto = new CartItemDto();
+                    dto.setProductId(item.getProductId());
+                    dto.setQuantity(item.getQuantity());
+                    return dto;
+                })
+                .toList();
+            
+            log.debug("Processing checkout for user {} with {} items", 
+                user.getId(), cartItems.size());
+            
             Order order = orderService.createOrder(
                 user.getId(), 
-                request.getCartItems(), 
+                cartItems, 
                 request.getShippingAddress(), 
                 request.getNotes()
             );
             
+            log.info("Successfully created order {} for user {}", order.getId(), user.getId());
             return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse(true, "Order created successfully", order));
                 
         } catch (IllegalArgumentException e) {
-            // Handle validation errors
+            log.warn("Checkout validation failed: {}", e.getMessage());
             return ResponseEntity.badRequest()
                 .body(new ApiResponse(false, e.getMessage(), null));
                 
         } catch (Exception e) {
-            // Log unexpected errors
-            // log.error("Unexpected error during checkout for user {}", user.getId(), e);
+            log.error("Unexpected error during checkout", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiResponse(false, "An error occurred while processing your order", null));
         }
@@ -79,10 +216,14 @@ public class OrderController {
             @Parameter(description = "Sort direction") @RequestParam(value = "sortDir", defaultValue = "desc") String sortDir) {
         
         User user = (User) authentication.getPrincipal();
+        log.info("Retrieving orders for user {} - page: {}, size: {}", user.getId(), page, size);
+        
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
         
         Page<Order> orders = orderService.getUserOrders(user.getId(), pageable);
+        log.debug("Retrieved {} orders for user {}", orders.getTotalElements(), user.getId());
+        
         return ResponseEntity.ok(orders);
     }
     
@@ -151,57 +292,19 @@ public class OrderController {
             
             // Check if user owns this order
             if (!order.getUser().getId().equals(user.getId())) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiResponse(false, "Access denied", null));
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ApiResponse(false, "Access denied", null));
             }
             
             Order updatedOrder = orderService.acceptTermsAndUpdateOrder(id);
-            return ResponseEntity.ok(new ApiResponse(true, "Terms accepted and order approved", updatedOrder));
+            return ResponseEntity.ok(new ApiResponse(true, "Terms accepted and order updated", updatedOrder));
+            
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                .body(new ApiResponse(false, e.getMessage(), null));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new ApiResponse(false, e.getMessage(), null));
-        }
-    }
-    
-    @PutMapping("/{id}/send-payment-info")
-    @Operation(summary = "Send payment information to user")
-    public ResponseEntity<?> sendPaymentInfo(@PathVariable Long id, @RequestBody PaymentInfoRequest request) {
-        try {
-            Order updatedOrder = orderService.sendPaymentInfo(id, request.getPaymentInfo());
-            return ResponseEntity.ok(new ApiResponse(true, "Payment information sent", updatedOrder));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new ApiResponse(false, e.getMessage(), null));
-        }
-    }
-    
-    @PutMapping("/{id}/confirm-payment")
-    @Operation(summary = "Confirm payment received")
-    public ResponseEntity<?> confirmPayment(@PathVariable Long id) {
-        try {
-            Order updatedOrder = orderService.confirmPayment(id);
-            return ResponseEntity.ok(new ApiResponse(true, "Payment confirmed", updatedOrder));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new ApiResponse(false, e.getMessage(), null));
-        }
-    }
-    
-    @PutMapping("/{id}/initiate-delivery")
-    @Operation(summary = "Initiate order delivery")
-    public ResponseEntity<?> initiateDelivery(@PathVariable Long id) {
-        try {
-            Order updatedOrder = orderService.initiateDelivery(id);
-            return ResponseEntity.ok(new ApiResponse(true, "Delivery initiated", updatedOrder));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new ApiResponse(false, e.getMessage(), null));
-        }
-    }
-    
-    @PutMapping("/{id}/mark-delivered")
-    @Operation(summary = "Mark order as delivered")
-    public ResponseEntity<?> markAsDelivered(@PathVariable Long id) {
-        try {
-            Order updatedOrder = orderService.markAsDelivered(id);
-            return ResponseEntity.ok(new ApiResponse(true, "Order marked as delivered", updatedOrder));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new ApiResponse(false, e.getMessage(), null));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ApiResponse(false, "An error occurred while updating order", null));
         }
     }
     
@@ -233,4 +336,3 @@ public class OrderController {
         public void setPaymentInfo(String paymentInfo) { this.paymentInfo = paymentInfo; }
     }
 }
-

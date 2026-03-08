@@ -277,7 +277,7 @@ public ResponseEntity<?> updateProduct(
     @GetMapping("/orders/status/{status}")
     @Operation(summary = "Get orders by status")
     public ResponseEntity<Page<OrderDTO>> getOrdersByStatus(
-            @PathVariable Order.OrderStatus status,
+            @PathVariable("status") Order.OrderStatus status,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size,
             @RequestParam(value = "sortBy", defaultValue = "createdAt") String sortBy,

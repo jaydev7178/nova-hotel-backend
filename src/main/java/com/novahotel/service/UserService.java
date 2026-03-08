@@ -2,6 +2,8 @@ package com.novahotel.service;
 
 import com.novahotel.entity.User;
 import com.novahotel.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -17,6 +19,8 @@ import java.util.Optional;
 @Transactional
 public class UserService implements UserDetailsService {
     
+    private static final Logger log = LoggerFactory.getLogger(UserService.class);
+    
     @Autowired
     private UserRepository userRepository;
     
@@ -31,10 +35,14 @@ public class UserService implements UserDetailsService {
     }
     
     public User registerUser(User user) {
+        log.info("Registering new user with username: {}, email: {}", user.getUsername(), user.getEmail());
+        
         if (userRepository.existsByUsername(user.getUsername())) {
+            log.warn("Registration failed - username already exists: {}", user.getUsername());
             throw new RuntimeException("Username already exists");
         }
         if (userRepository.existsByEmail(user.getEmail())) {
+            log.warn("Registration failed - email already exists: {}", user.getEmail());
             throw new RuntimeException("Email already exists");
         }
         
@@ -42,7 +50,10 @@ public class UserService implements UserDetailsService {
         user.setRole(User.Role.USER);
         user.setIsActive(true);
         
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+        log.info("User registered successfully - ID: {}, Username: {}", savedUser.getId(), savedUser.getUsername());
+        
+        return savedUser;
     }
     
     public User updateUser(Long userId, User updatedUser) {

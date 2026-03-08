@@ -4,13 +4,15 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.novahotel.dto.CheckoutRequest;
+import com.novahotel.dto.CartItemDto;
 import com.novahotel.dto.CheckoutRequest.ShippingAddressDto;
 import com.novahotel.dto.OrderDTO;
 import com.novahotel.dto.OrderItemDTO;
@@ -27,6 +29,8 @@ import lombok.RequiredArgsConstructor;
 @Transactional
 @RequiredArgsConstructor
 public class OrderService {
+    
+    private static final Logger log = LoggerFactory.getLogger(OrderService.class);
     
     @Autowired
     private OrderRepository orderRepository;
@@ -47,22 +51,27 @@ public class OrderService {
 
     
     @Transactional
-    public Order createOrder(Long userId, List<CheckoutRequest.CartItemDto> cartItems, 
+    public Order createOrder(Long userId, List<CartItemDto> cartItems, 
                         ShippingAddressDto shippingAddress, String notes) {
+        
+        log.info("Creating order for user {} with {} items", userId, cartItems.size());
         
         // 1. Validate user
         User user = userService.getUserById(userId);
         if (user == null) {
+            log.error("User not found with id: {}", userId);
             throw new IllegalArgumentException("User not found with id: " + userId);
         }
         
         // 2. Validate cart is not empty
         if (cartItems == null || cartItems.isEmpty()) {
+            log.warn("Attempted to create order with empty cart for user {}", userId);
             throw new IllegalArgumentException("Cart is empty");
         }
         
         // 3. Validate shipping address
         if (shippingAddress == null) {
+            log.warn("Attempted to create order without shipping address for user {}", userId);
             throw new IllegalArgumentException("Shipping address is required");
         }
         
@@ -85,27 +94,34 @@ public class OrderService {
         BigDecimal totalAmount = BigDecimal.ZERO;
         List<OrderItem> orderItems = new ArrayList<>();
         
-        for (CheckoutRequest.CartItemDto cartItem : cartItems) {
+        for (CartItemDto cartItem : cartItems) {
             Long productId = cartItem.getProductId();
             Integer quantity = cartItem.getQuantity();
             
+            log.debug("Processing cart item - Product ID: {}, Quantity: {}", productId, quantity);
+            
             // Validate quantity
             if (quantity == null || quantity <= 0) {
+                log.error("Invalid quantity {} for product id: {}", quantity, productId);
                 throw new IllegalArgumentException("Invalid quantity for product id: " + productId);
             }
             
             // Get and validate product
             Product product = productService.getProductById(productId);
             if (product == null) {
+                log.error("Product not found with id: {}", productId);
                 throw new IllegalArgumentException("Product not found with id: " + productId);
             }
             
             if (!product.getIsActive()) {
+                log.warn("Attempted to order inactive product: {} (ID: {})", product.getName(), productId);
                 throw new IllegalArgumentException("Product is not available: " + product.getName());
             }
             
             // Check stock availability
             if (product.getStockQuantity() < quantity) {
+                log.warn("Insufficient stock for product: {} (ID: {}). Available: {}, Requested: {}", 
+                    product.getName(), productId, product.getStockQuantity(), quantity);
                 throw new IllegalArgumentException(
                     String.format("Insufficient stock for product: %s. Available: %d, Requested: %d",
                         product.getName(), product.getStockQuantity(), quantity)
@@ -114,6 +130,7 @@ public class OrderService {
             
             // Create order item
             OrderItem orderItem = new OrderItem();
+            orderItem.setUser(user);
             orderItem.setOrder(order);
             orderItem.setProduct(product);
             orderItem.setQuantity(quantity);
@@ -133,7 +150,28 @@ public class OrderService {
         order.setTotalAmount(totalAmount);
         
         // 7. Save order (cascade should save order items too)
-        return orderRepository.save(order);
+        Order savedOrder = orderRepository.save(order);
+        log.info("Order created successfully - Order ID: {}, Total Amount: {}", 
+            savedOrder.getId(), totalAmount);
+        
+        // 8. Send email notifications
+        try {
+            emailService.sendOrderConfirmationEmail(savedOrder);
+            log.info("Order confirmation email sent to user for order {}", savedOrder.getOrderNumber());
+        } catch (Exception e) {
+            log.error("Failed to send order confirmation email for order {}", savedOrder.getOrderNumber(), e);
+            // Note: Order creation succeeds even if email fails
+        }
+        
+        try {
+            emailService.sendOrderNotificationToOwner(savedOrder);
+            log.info("Order notification email sent to owner for order {}", savedOrder.getOrderNumber());
+        } catch (Exception e) {
+            log.error("Failed to send order notification to owner for order {}", savedOrder.getOrderNumber(), e);
+            // Note: Order creation succeeds even if email fails
+        }
+        
+        return savedOrder;
     }
 
     

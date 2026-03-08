@@ -12,6 +12,8 @@ public class OrderItemDTO {
     private BigDecimal unitPrice;
     private BigDecimal totalPrice;
     private Long productId;
+    private Long userId;
+    private Long orderId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

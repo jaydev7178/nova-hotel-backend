@@ -25,5 +25,15 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
     
     @Query("SELECT SUM(oi.quantity) FROM OrderItem oi WHERE oi.product.id = :productId AND oi.order.status IN :statuses")
     Long getTotalQuantitySoldByProductIdAndStatusIn(@Param("productId") Long productId, @Param("statuses") List<Order.OrderStatus> statuses);
+    
+    // Cart operations - where order is null
+    @Query("SELECT oi FROM OrderItem oi WHERE oi.user.id = :userId AND oi.order IS NULL")
+    List<OrderItem> findCartItemsByUserId(@Param("userId") Long userId);
+    
+    @Query("SELECT oi FROM OrderItem oi WHERE oi.user.id = :userId AND oi.product.id = :productId AND oi.order IS NULL")
+    List<OrderItem> findCartItemByUserIdAndProductId(@Param("userId") Long userId, @Param("productId") Long productId);
+    
+    @Query("DELETE FROM OrderItem oi WHERE oi.user.id = :userId AND oi.product.id = :productId AND oi.order IS NULL")
+    void deleteCartItemByUserIdAndProductId(@Param("userId") Long userId, @Param("productId") Long productId);
 }
 

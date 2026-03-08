@@ -1,5 +1,7 @@
 package com.novahotel.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +32,8 @@ import jakarta.validation.Valid;
 @Tag(name = "Authentication", description = "Authentication endpoints")
 public class AuthController {
     
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
+    
     @Autowired
     private AuthenticationManager authenticationManager;
     
@@ -45,6 +49,8 @@ public class AuthController {
     @PostMapping("/register")
     @Operation(summary = "Register a new user")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
+        log.info("User registration attempt for username: {}, email: {}", 
+            request.getUsername(), request.getEmail());
         try {
             User user = new User();
             user.setUsername(request.getUsername());
@@ -66,8 +72,12 @@ public class AuthController {
             loginResponse.setUser(savedUser);
             loginResponse.setMessage("Registration successful");
 
+            log.info("User registration successful for username: {}, userId: {}", 
+                savedUser.getUsername(), savedUser.getId());
             return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse(true, "User registered successfully", loginResponse));
         } catch (Exception e) {
+            log.error("User registration failed for username: {}, email: {}", 
+                request.getUsername(), request.getEmail(), e);
             return ResponseEntity.badRequest().body(new ApiResponse(false, e.getMessage(), null));
         }
     }
@@ -75,7 +85,7 @@ public class AuthController {
     @PostMapping("/login")
     @Operation(summary = "Login user")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
-            System.out.println(passwordEncoder.encode(request.getPassword()).toString());
+        log.info("Login attempt for user: {}", request.getUsernameOrEmail());
         try {
             Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsernameOrEmail(), request.getPassword())
@@ -91,8 +101,10 @@ public class AuthController {
             response.setUser(user);
             response.setMessage("Login successful");
             
+            log.info("Login successful for user: {}, userId: {}", user.getUsername(), user.getId());
             return ResponseEntity.ok(new ApiResponse(true, "Login successful", response));
         } catch (Exception e) {
+            log.warn("Login failed for user: {}", request.getUsernameOrEmail());
             return ResponseEntity.badRequest().body(new ApiResponse(false, "Invalid credentials", null));
         }
     }

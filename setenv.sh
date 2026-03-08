@@ -4,5 +4,5 @@ export DB_USERNAME=sa
 export DB_PASSWORD=admin@123
 export JWT_SECRET=your_very_secure_jwt_secret_key_at_least_32_characters_long
 export MAIL_USERNAME=jaydevsahu7178@gmail.com
-export MAIL_PASSWORD=Jsahu@cr7
+export MAIL_PASSWORD=hthr xbvi akwk negj
 export OWNER_EMAIL=owner@novahotelsupplies.com

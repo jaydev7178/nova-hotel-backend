@@ -10,8 +10,8 @@ spring:
 
   jpa:
     hibernate:
-      # use update in dev to preserve data while allowing schema evolution
-      ddl-auto: update
+      # use none in dev since schema is already created
+      ddl-auto: none
     show-sql: true
     properties:
       hibernate:

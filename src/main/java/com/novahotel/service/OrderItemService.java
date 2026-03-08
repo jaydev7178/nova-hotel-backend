@@ -1,5 +1,6 @@
 package com.novahotel.service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -32,9 +33,12 @@ public class OrderItemService {
         dto.setTotalPrice(item.getTotalPrice());
         dto.setCreatedAt(item.getCreatedAt());
         dto.setUpdatedAt(item.getUpdatedAt());
-
+        dto.setUserId(item.getUser().getId());
         if (item.getProduct() != null) {
             dto.setProductId(item.getProduct().getId());
+        }
+        if (item.getOrder() != null) {
+            dto.setOrderId(item.getOrder().getId());
         }
 
         return dto;
@@ -87,4 +91,77 @@ public class OrderItemService {
         return orderItemRepository.getTotalQuantitySoldByProductIdAndStatusIn(productId, statuses);
     }
 
+    // Cart Operations
+    /**
+     * Save OrderItem to cart (order will be null)
+     * @param orderItem the order item to save
+     * @return saved OrderItem
+     */
+    public OrderItem saveToCart(OrderItem orderItem) {
+        // Validate required fields
+        if (orderItem.getUser() == null) {
+            throw new IllegalArgumentException("User is required");
+        }
+        if (orderItem.getProduct() == null) {
+            throw new IllegalArgumentException("Product is required");
+        }
+        if (orderItem.getQuantity() == null || orderItem.getQuantity() < 1) {
+            throw new IllegalArgumentException("Quantity must be at least 1");
+        }
+        if (orderItem.getUnitPrice() == null) {
+            throw new IllegalArgumentException("Unit price is required");
+        }
+        
+        // Calculate total price
+        orderItem.setTotalPrice(orderItem.getUnitPrice().multiply(BigDecimal.valueOf(orderItem.getQuantity())));
+        
+        // Ensure order is null for cart items
+        orderItem.setOrder(null);
+        
+        return orderItemRepository.save(orderItem);
+    }
+
+    /**
+     * Get all cart items for a user (where order is null)
+     * @param userId the user ID
+     * @return list of cart items as DTOs
+     */
+    public List<OrderItemDTO> getCartItems(Long userId) {
+        List<OrderItem> cartItems = orderItemRepository.findCartItemsByUserId(userId);
+        return mapToDtoList(cartItems);
+    }
+
+    /**
+     * Remove a product from user's cart
+     * @param userId the user ID
+     * @param productId the product ID
+     */
+    public void removeFromCart(Long userId, Long productId) {
+        List<OrderItem> cartItems = orderItemRepository.findCartItemByUserIdAndProductId(userId, productId);
+        if (cartItems.isEmpty()) {
+            throw new IllegalArgumentException("Cart item not found");
+        }
+        // Delete all cart items matching the criteria
+        for (OrderItem item : cartItems) {
+            orderItemRepository.delete(item);
+        }
+    }
+
+    /**
+     * Get cart item count for a user
+     * @param userId the user ID
+     * @return count of items in cart
+     */
+    public long getCartItemCount(Long userId) {
+        return orderItemRepository.findCartItemsByUserId(userId).size();
+    }
+
+    /**
+     * Clear all cart items for a user
+     * @param userId the user ID
+     */
+    public void clearCart(Long userId) {
+        List<OrderItem> cartItems = orderItemRepository.findCartItemsByUserId(userId);
+        orderItemRepository.deleteAll(cartItems);
+    }
 }
